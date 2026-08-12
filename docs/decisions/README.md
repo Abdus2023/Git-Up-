@@ -35,3 +35,4 @@ Context → Decision → Consequences → Notes (optional).
 | [0018](ADR-0018-pipeline-and-lineage.md) | accepted | Explicit lineage, emit --check, pipeline tool |
 | [0019](ADR-0019-contract-diff.md) | accepted | contract diff compares identity |
 | [0020](ADR-0020-self-plan-and-strict-validate.md) | accepted | Self-plan + validate --strict |
+| [0021](ADR-0021-host-1.0.md) | accepted | Host Implementation 1.0 |

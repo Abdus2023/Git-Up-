@@ -13,7 +13,7 @@ Any Source → Git-Up! Contract → Git-Up! Controller → Git repository
 | Freeze | Role |
 |---|---|
 | [Specification v0.1](docs/specification/README.md) | Identity, models, invariants |
-| [Implementation v0.11](docs/IMPLEMENTATION-FREEZE.md) | Controller + adapters + pipeline + diff |
+| [Host 1.0](docs/HOST-1.0.md) | Conforming Python host of Spec v0.1 |
 | [Conformance audit](docs/traceability/conformance.md) | Phase → impl → test → gap |
 | [HOWTO](docs/HOWTO.md) | Operator / agent workflow |
 

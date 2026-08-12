@@ -2,7 +2,7 @@
 
 This tree is the **Specification Freeze v0.1**.
 
-Specification Freeze v0.1 remains the identity/invariant baseline. [Implementation Freeze v0.2](IMPLEMENTATION-FREEZE.md) authorizes the host `git-up` implementation.
+Specification Freeze v0.1 remains the identity/invariant baseline. The host implementation in force is [Host 1.0](HOST-1.0.md).
 
 ## Start here
 

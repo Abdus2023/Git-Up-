@@ -2,6 +2,11 @@
 
 Derived history. Not authority.
 
+## 1.0.0 — 2026-08-12
+
+- Host Implementation 1.0 of Specification v0.1 (ADR-0021)
+- Committed `git-up.contract.json` must match `emit(docs/plans/self.md)`
+
 ## 0.11.0 — 2026-08-12
 
 - Self-plan `docs/plans/self.md` is the source of `git-up.contract.json`

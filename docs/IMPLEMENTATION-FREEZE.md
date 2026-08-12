@@ -1,9 +1,11 @@
-# Git-Up! Implementation Freeze v0.11
+# Git-Up! Implementation Freeze — Host 1.0
 
 **Declared:** 2026-08-12  
-**Status:** IN FORCE (supersedes v0.10 host surface)  
+**Status:** SUPERSEDED as a 0.x series by [HOST-1.0.md](HOST-1.0.md)  
 **Depends on:** Specification Freeze v0.1  
-**ADR:** [ADR-0010](decisions/ADR-0010-implementation-freeze.md) … [ADR-0020](decisions/ADR-0020-self-plan-and-strict-validate.md)
+**ADR:** [ADR-0010](decisions/ADR-0010-implementation-freeze.md) … [ADR-0021](decisions/ADR-0021-host-1.0.md)
+
+The 0.2–0.11 notes below are historical. The in-force host baseline is **1.0.0**.
 
 This freeze **authorizes implementation** of Git-Up! against specs 05–18.
 
@@ -50,7 +52,11 @@ Especially:
 
 `python3 -m unittest discover -s tests -p 'test_*.py'` — spec 18 IDs plus v0.3 CLI/truncation/report-lease tests.
 
-## 6. v0.11 additions
+## 6. Host 1.0
+
+See [HOST-1.0.md](HOST-1.0.md). The committed self-contract must match `emit(docs/plans/self.md)`.
+
+## 6t. v0.11 additions
 
 - `docs/plans/self.md` → emitted `git-up.contract.json` (adapter dogfood)
 - `git-up contract validate --strict`
