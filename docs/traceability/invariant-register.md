@@ -34,3 +34,4 @@ Charter invariants (spec 01 §8) plus operational MUST IDs from spec 18.
 | I-REF-2 | Dangling requirement_ref is TRACEABILITY | 15 | `test_dangling_requirement_ref_is_traceability` |
 | I-AUTH-2 | Contract-level authority.sources must exist | 09 | `test_missing_authority_source_blocks` |
 | I-STRICT-1 | --strict fails on contract-shape blockers | 09, 15 | `test_strict_fails_on_traceability` |
+| I-PRIV-1 | sudo-class executables denied even if allowlisted | 16 §8 | `test_sudo_blocked_even_if_allowlisted` |

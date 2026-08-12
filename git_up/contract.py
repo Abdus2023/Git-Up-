@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
+
+_SHA256_HEX = re.compile(r"^[0-9a-fA-F]{64}$")
 
 from . import CONTRACT_SCHEMA
 from .errors import ContractError
@@ -52,9 +55,15 @@ def _task(raw: dict) -> Task:
     for v in raw.get("validation_commands") or []:
         if not isinstance(v, dict):
             raise ContractError(f"task {tid}: validation_commands entries must be objects")
+        cmd = str(v.get("command") or "")
+        cid = str(v.get("id") or "")
+        if cid and not cmd.strip():
+            raise ContractError(
+                f"task {tid}: validation command {cid!r} has an empty command"
+            )
         cmds.append(ValidationCommand(
-            id=str(v.get("id") or ""),
-            command=str(v.get("command") or ""),
+            id=cid,
+            command=cmd,
             expected_exit=int(v.get("expected_exit", 0)),
             purpose=str(v.get("purpose") or ""),
         ))
@@ -83,10 +92,17 @@ def _task(raw: dict) -> Task:
     for e in raw.get("expected_outputs") or []:
         if not isinstance(e, dict):
             raise ContractError(f"task {tid}: expected_outputs entries must be objects")
-        eouts.append(ExpectedOutput(
-            path=str(e.get("path") or ""),
-            sha256=str(e.get("sha256") or ""),
-        ))
+        path = str(e.get("path") or "")
+        digest = str(e.get("sha256") or "")
+        if not path or not digest:
+            raise ContractError(
+                f"task {tid}: expected_outputs entries need path and sha256"
+            )
+        if not _SHA256_HEX.match(digest):
+            raise ContractError(
+                f"task {tid}: expected_outputs sha256 must be 64 hex characters"
+            )
+        eouts.append(ExpectedOutput(path=path, sha256=digest.lower()))
     _require_unique((c.id for c in cmds), f"task {tid} validation command id")
     _require_unique((c.id for c in crits), f"task {tid} acceptance criterion id")
     return Task(

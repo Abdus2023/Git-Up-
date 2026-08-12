@@ -2,6 +2,12 @@
 
 Derived history. Not authority.
 
+## 1.0.6 — 2026-08-12
+
+- `sudo` / `su` / `doas` / `pkexec` denied even if allowlisted (spec 16 §8)
+- Empty validation commands and non-sha256 `expected_outputs` are ContractError
+- `git-up evidence` annotates `bound_to_current_context` (advisory)
+
 ## 1.0.5 — 2026-08-12
 
 - Contract-level `authority.sources` are confined and must exist (spec 09)

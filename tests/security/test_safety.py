@@ -22,6 +22,13 @@ class SafetyTests(unittest.TestCase):
             validate_command("bash -c echo hi", allow=["bash"])
         self.assertIn("shell interpreter", str(ctx.exception))
 
+    def test_sudo_blocked_even_if_allowlisted(self):
+        for exe in ("sudo", "su", "doas", "pkexec"):
+            with self.subTest(exe=exe):
+                with self.assertRaises(SafetyError) as ctx:
+                    validate_command(f"{exe} python3", allow=[exe, "python3"])
+                self.assertIn("privilege-escalation", str(ctx.exception))
+
     def test_prefix_allowlist_does_not_match(self):
         with self.assertRaises(SafetyError):
             validate_command("python3-evil -c pass", allow=["python3"])

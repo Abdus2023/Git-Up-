@@ -59,9 +59,13 @@ def scope_violation_paths(paths, task, extra_ignore_prefixes=None) -> list:
 
 # spec 10 §2 / spec 16 §3: ; & | > < ` $ \ and ASCII controls.
 _COMMAND_REJECT = set(";|&><`$\\")
-_DENIED_EXE = {
+# Shell interpreters (spec 10 §2 / 16 §3) and privilege-escalation
+# frontends (spec 16 §8: MUST NOT invoke sudo / require root).
+_DENIED_SHELL = {
     "sh", "bash", "dash", "zsh", "ksh", "csh", "tcsh", "ash", "busybox", "fish",
 }
+_DENIED_PRIVILEGE = {"sudo", "su", "doas", "pkexec"}
+_DENIED_EXE = _DENIED_SHELL | _DENIED_PRIVILEGE
 
 
 def _controls() -> set:
@@ -136,8 +140,12 @@ def validate_command(command, allow=None):
     exe = tokens[0]
     if exe.startswith(".") or "/" in exe or "\\" in exe or os.sep in exe:
         raise SafetyError(f"executable must be a bare tool name: {exe!r}")
-    if exe in _DENIED_EXE:
+    if exe in _DENIED_SHELL:
         raise SafetyError(f"shell interpreter executables are prohibited: {exe!r}")
+    if exe in _DENIED_PRIVILEGE:
+        raise SafetyError(
+            f"privilege-escalation executables are prohibited: {exe!r}"
+        )
 
     allow_list = list(allow or [])
     if not allow_list:

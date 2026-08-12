@@ -8,11 +8,11 @@ import sys
 from pathlib import Path
 
 from . import REPORT_SCHEMA, __version__
-from .authorize import predicate_report
+from .authorize import evidence_bound_to_context, predicate_report
 from .contract import (
     load_contract, validate_confinement, validate_repository_binding,
 )
-from .identity import repository_binding, source_identity
+from .identity import provenance_context, repository_binding, source_identity
 from .controller import Controller
 from .errors import ContractError, GitUpError
 
@@ -413,12 +413,27 @@ def main(argv=None) -> int:
 
         ctrl = _controller(args)
         if cmd == "evidence":
+            trusted = ctrl.log.verified_records()
+            try:
+                contract = load_contract(ctrl.contract_path)
+                ctx = provenance_context(
+                    ctrl.repo_root, contract, create_identity=False,
+                )
+                bound = []
+                for rec in trusted:
+                    item = dict(rec)
+                    item["bound_to_current_context"] = evidence_bound_to_context(
+                        rec, ctx,
+                    )
+                    bound.append(item)
+            except (ContractError, OSError):
+                bound = [dict(r, bound_to_current_context=None) for r in trusted]
             payload = _envelope(
                 mode="dry-run",
                 advisory=True,
                 frontier="PAUSED",
                 integrity=ctrl.log.verify_integrity(),
-                trusted=ctrl.log.verified_records(),
+                trusted=bound,
             )
             return _emit(args, payload, 0)
 
@@ -457,6 +472,11 @@ def main(argv=None) -> int:
             declared_repository=(
                 repository_binding(ctrl.contract) if ctrl.contract else {}
             ),
+            authority_sources=[
+                {"path": a.path, "anchor": a.anchor,
+                 "requirement_id": a.requirement_id}
+                for a in (getattr(ctrl.contract, "authority_sources", None) or [])
+            ] if ctrl.contract else [],
             evidence_integrity=res.report.get("evidence_integrity"),
             provenance=(ctrl.contract.provenance if ctrl.contract else {}),
             result=res.result,
