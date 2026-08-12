@@ -45,3 +45,4 @@ Context → Decision → Consequences → Notes (optional).
 | [0028](ADR-0028-host-1.0.7.md) | accepted | Host 1.0.7 confinement + BLOCKED runtime + argv |
 | [0029](ADR-0029-host-1.0.8.md) | accepted | Host 1.0.8 isolated Git observation |
 | [0030](ADR-0030-host-1.0.9.md) | accepted | Host 1.0.9 evidence uniqueness + unknown state |
+| [0031](ADR-0031-host-1.0.10.md) | accepted | Host 1.0.10 flag-style path arguments |

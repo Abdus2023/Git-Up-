@@ -71,6 +71,25 @@ class ExecutionTests(unittest.TestCase):
             self.assertTrue(res.new_evidence)
             self.assertEqual(res.new_evidence[0]["result"], "BLOCKED")
 
+    def test_flag_dotdot_is_blocked_not_executed(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = init_repo(Path(td))
+            task = minimal_task(
+                validation_commands=[{
+                    "id": "v1",
+                    "command": "python3 --file=../secret",
+                    "expected_exit": 0,
+                    "purpose": "smuggle",
+                }],
+            )
+            seed_worktree(repo, contract_doc([task]))
+            ctrl = make_controller(repo)
+            res = ctrl.run(dry_run=False, execute=True)
+            self.assertEqual(res.result, "FAIL")
+            self.assertTrue(res.new_evidence)
+            self.assertEqual(res.new_evidence[0]["result"], "BLOCKED")
+            self.assertEqual(ctrl.store.get("T1").state, "BLOCKED")
+
     def test_execution_contract_records_allowlist(self):
         with tempfile.TemporaryDirectory() as td:
             repo = init_repo(Path(td))
@@ -78,6 +97,9 @@ class ExecutionTests(unittest.TestCase):
             res = make_controller(repo).run(dry_run=True, execute=False)
             self.assertTrue(res.contracts)
             ec = res.contracts[0]
+            self.assertIn("command_id", ec.get("required_evidence") or [])
+            self.assertIn("observed_delta", ec.get("required_evidence") or [])
+            self.assertIn("target_hashes", ec.get("required_evidence") or [])
             self.assertEqual(ec.get("effective_allowlist"), ["python3"])
             self.assertIsNone(ec.get("cli_allow_tool"))
             self.assertEqual(ec.get("contract_tool_set"), ["python3"])

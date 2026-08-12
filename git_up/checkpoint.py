@@ -73,6 +73,13 @@ class StateStore:
         except json.JSONDecodeError:
             self.tasks = {}
             return
+        ver = str(raw.get("schema_version") or "")
+        if ver and ver != STATE_SCHEMA:
+            # Unknown store version: refuse; reconstruct from evidence.
+            self.tasks = {}
+            self.last_checkpoint = ""
+            self.repo_head = ""
+            return
         self.last_checkpoint = str(raw.get("last_checkpoint") or "")
         self.repo_head = str(raw.get("repo_head") or "")
         known = {s.value for s in TaskState}

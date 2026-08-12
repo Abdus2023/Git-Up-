@@ -116,6 +116,26 @@ class RecoveryTests(unittest.TestCase):
             rec = next(t for t in stored["tasks"] if t["task_id"] == "T1")
             self.assertEqual(rec["state"], "PASS")
 
+    def test_unknown_checkpoint_schema_is_empty_store(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = init_repo(Path(td))
+            seed_worktree(repo)
+            state = repo / ".git-up" / "state.json"
+            state.parent.mkdir(parents=True, exist_ok=True)
+            state.write_text(json.dumps({
+                "schema_version": "git-up.state.v99",
+                "tasks": [{
+                    "task_id": "T1",
+                    "state": "PASS",
+                    "validated_pass": True,
+                }],
+            }), encoding="utf-8")
+            res = make_controller(repo).run(dry_run=False, execute=False)
+            self.assertEqual(res.result, "PASS", res.errors)
+            states = {c["task_id"]: c["effective_state"]
+                      for c in res.report["classifications"]}
+            self.assertNotEqual(states.get("T1"), "PASS")
+
     def test_I_REC_1_corrupt_checkpoint(self):
         with tempfile.TemporaryDirectory() as td:
             repo = init_repo(Path(td))

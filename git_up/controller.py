@@ -153,9 +153,10 @@ class Controller:
                 for c in task.acceptance_criteria
             ],
             "required_evidence": [
-                "contract_id", "command", "stdout", "stderr", "exit_status",
-                "result", "timestamp", "repository_identity", "head",
-                "source_identity", "validator",
+                "contract_id", "command", "command_id", "stdout", "stderr",
+                "exit_status", "result", "timestamp", "repository_identity",
+                "head", "source_identity", "validator", "observed_delta",
+                "target_hashes",
             ],
         }
 

@@ -39,6 +39,7 @@ Canonical process and list: [../decisions/README.md](../decisions/README.md).
 | [0028](../decisions/ADR-0028-host-1.0.7.md) | Host 1.0.7 confinement + BLOCKED runtime + argv |
 | [0029](../decisions/ADR-0029-host-1.0.8.md) | Host 1.0.8 isolated Git observation |
 | [0030](../decisions/ADR-0030-host-1.0.9.md) | Host 1.0.9 evidence uniqueness + unknown state |
+| [0031](../decisions/ADR-0031-host-1.0.10.md) | Host 1.0.10 flag-style path arguments |
 
 ## Rules
 

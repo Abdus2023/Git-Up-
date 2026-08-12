@@ -37,6 +37,25 @@ class SafetyTests(unittest.TestCase):
         toks = validate_command("python3 -c pass", allow=["python3"])
         self.assertEqual(toks[0], "python3")
 
+    def test_flag_equals_dotdot_rejected(self):
+        # spec 10 §2: `..` in --flag=value must not bypass the splitter.
+        with self.assertRaises(SafetyError) as ctx:
+            validate_command("python3 --file=../secret", allow=["python3"])
+        self.assertIn("path traversal", str(ctx.exception))
+
+    def test_flag_equals_absolute_rejected(self):
+        with self.assertRaises(SafetyError) as ctx:
+            validate_command("python3 --file=/etc/passwd", allow=["python3"])
+        self.assertIn("absolute", str(ctx.exception))
+
+    def test_backslash_dotdot_rejected(self):
+        with self.assertRaises(SafetyError):
+            validate_command("python3 foo\\..\\secret", allow=["python3"])
+
+    def test_relative_flag_value_ok(self):
+        toks = validate_command("python3 --file=src/out.txt", allow=["python3"])
+        self.assertEqual(toks[-1], "--file=src/out.txt")
+
     def test_shell_metacharacters_rejected(self):
         # spec 10 §2 / spec 16 §3 — including ampersand (was missing in 1.0.0).
         for ch in ";|&><`$\\":

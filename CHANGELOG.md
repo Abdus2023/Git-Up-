@@ -2,6 +2,12 @@
 
 Derived history. Not authority.
 
+## 1.0.10 — 2026-08-12
+
+- `--flag=../x` and `--flag=/abs` are denied as command arguments (spec 10 / 16)
+- Execution-contract `required_evidence` names command_id / observed_delta / target_hashes
+- Unknown checkpoint schema_version is treated as empty
+
 ## 1.0.9 — 2026-08-12
 
 - Empty `evidence_id` and unknown `result` stop the trusted prefix (spec 11 / 04)

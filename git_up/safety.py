@@ -154,8 +154,32 @@ def validate_command(command, allow=None):
         raise SafetyError(f"executable {exe!r} not in allowlist {allow_list}")
 
     for tok in tokens[1:]:
-        if tok.startswith("/") or (len(tok) >= 2 and tok[1] == ":"):
+        if _arg_is_absolute(tok):
             raise SafetyError(f"absolute path argument not allowed: {tok!r}")
-        if ".." in tok.split("/"):
+        if _arg_has_dotdot(tok):
             raise SafetyError(f"path traversal argument not allowed: {tok!r}")
     return tokens
+
+
+def _arg_rhs(tok: str) -> str:
+    """Bare token, or the value side of --flag=value / flag=value."""
+    if "=" in tok:
+        return tok.split("=", 1)[1]
+    return tok
+
+
+def _arg_is_absolute(tok: str) -> bool:
+    """Spec 10 §2: no absolute path arguments, including --flag=/abs."""
+    for piece in (tok, _arg_rhs(tok)):
+        if piece.startswith("/") or (len(piece) >= 2 and piece[1] == ":"):
+            return True
+    return False
+
+
+def _arg_has_dotdot(tok: str) -> bool:
+    """Spec 10 §2 / 16 §3: no `..` path component, including --flag=../x."""
+    normalized = tok.replace("\\", "/")
+    for piece in (normalized, _arg_rhs(normalized)):
+        if ".." in piece.split("/"):
+            return True
+    return False
