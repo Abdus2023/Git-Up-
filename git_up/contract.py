@@ -146,6 +146,7 @@ def load_contract(path) -> Contract:
 
     timeout = int((policy.get("timeout_seconds") if isinstance(policy, dict) else None)
                   or raw.get("timeout_seconds") or 600)
+    prov = raw.get("provenance") if isinstance(raw.get("provenance"), dict) else {}
     return Contract(
         schema_version=ver,
         source_path=str(p.resolve()),
@@ -154,6 +155,11 @@ def load_contract(path) -> Contract:
         requirements=reqs,
         timeout_seconds=timeout,
         policy=dict(policy) if isinstance(policy, dict) else {},
+        provenance={
+            "producer": str(prov.get("producer") or ""),
+            "source_identity": str(prov.get("source_identity") or ""),
+            "parent_contracts": list(prov.get("parent_contracts") or []),
+        },
     )
 
 

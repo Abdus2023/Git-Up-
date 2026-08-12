@@ -9,6 +9,8 @@ Adapters produce Git-Up! contracts. They are **not** the controller.
 Any Source  →  Adapter  →  Implementation Contract  →  Git-Up! core
 ```
 
+Emitted contracts bind `provenance.source_identity` to the **plan object**, not the wrapping document (ADR-0017).
+
 ## Rules
 
 1. An adapter MAY fill `policy` with `fail_closed` / `exclusive` (core constants).

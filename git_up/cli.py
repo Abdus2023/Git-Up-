@@ -336,6 +336,7 @@ def main(argv=None) -> int:
             head=repo_head(repo),
             dirty_paths=sorted(porcelain(repo)),
             evidence_integrity=res.report.get("evidence_integrity"),
+            provenance=(ctrl.contract.provenance if ctrl.contract else {}),
             result=res.result,
             errors=res.errors,
         )

@@ -186,6 +186,7 @@ class Contract:
     requirements: List[Requirement]
     timeout_seconds: int = 600
     policy: dict = field(default_factory=dict)
+    provenance: dict = field(default_factory=dict)
 
     def task_by_id(self) -> dict:
         return {t.id: t for t in self.tasks}

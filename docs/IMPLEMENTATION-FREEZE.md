@@ -1,9 +1,9 @@
-# Git-Up! Implementation Freeze v0.7
+# Git-Up! Implementation Freeze v0.8
 
 **Declared:** 2026-08-12  
-**Status:** IN FORCE (supersedes v0.6 host surface)  
+**Status:** IN FORCE (supersedes v0.7 host surface)  
 **Depends on:** Specification Freeze v0.1  
-**ADR:** [ADR-0010](decisions/ADR-0010-implementation-freeze.md) … [ADR-0016](decisions/ADR-0016-fenced-plan.md)
+**ADR:** [ADR-0010](decisions/ADR-0010-implementation-freeze.md) … [ADR-0017](decisions/ADR-0017-plan-source-identity.md)
 
 This freeze **authorizes implementation** of Git-Up! against specs 05–18.
 
@@ -50,7 +50,13 @@ Especially:
 
 `python3 -m unittest discover -s tests -p 'test_*.py'` — spec 18 IDs plus v0.3 CLI/truncation/report-lease tests.
 
-## 6. v0.7 additions
+## 6. v0.8 additions
+
+- Emitted contracts carry `provenance.source_identity = SHA256(canonical(plan))`
+- `load_contract` persists provenance; contract identity includes it
+- Wrapping markdown prose is not part of the plan hash
+
+## 6x. v0.7 additions
 
 - Fenced `git-up-plan` blocks in markdown / issues / notes (ADR-0016)
 - `contract emit --from -` (stdin)

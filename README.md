@@ -13,7 +13,7 @@ Any Source → Git-Up! Contract → Git-Up! Controller → Git repository
 | Freeze | Role |
 |---|---|
 | [Specification v0.1](docs/specification/README.md) | Identity, models, invariants |
-| [Implementation v0.7](docs/IMPLEMENTATION-FREEZE.md) | Controller + plan/fence adapters |
+| [Implementation v0.8](docs/IMPLEMENTATION-FREEZE.md) | Controller + plan/fence adapters |
 | [Conformance audit](docs/traceability/conformance.md) | Phase → impl → test → gap |
 | [HOWTO](docs/HOWTO.md) | Operator / agent workflow |
 

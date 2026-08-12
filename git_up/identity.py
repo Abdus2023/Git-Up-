@@ -38,6 +38,13 @@ def source_identity(contract) -> str:
             "concurrency": contract.policy.get("concurrency", "exclusive"),
             "failure_mode": contract.policy.get("failure_mode", "fail_closed"),
         },
+        "provenance": {
+            "producer": (contract.provenance or {}).get("producer", ""),
+            "source_identity": (contract.provenance or {}).get("source_identity", ""),
+            "parent_contracts": sorted(
+                (contract.provenance or {}).get("parent_contracts") or []
+            ),
+        },
     }
     return sha256_json(payload)
 

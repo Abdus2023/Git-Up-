@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 
 from . import CONTRACT_SCHEMA
+from .canonical import sha256_json
 from .errors import ContractError
 
 PLAN_SCHEMA = "git-up.plan.v0.1"
@@ -233,7 +234,8 @@ def emit_contract(plan: dict) -> dict:
         "tasks": tasks,
         "provenance": {
             "producer": "git-up.adapter.plan",
-            "source_identity": "",
+            "source_identity": sha256_json(plan),
+            "parent_contracts": [],
         },
     }
 
