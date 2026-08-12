@@ -3,9 +3,9 @@
 **Declared:** 2026-08-12  
 **Status:** IN FORCE  
 **Implements:** [Specification Freeze v0.1](specification/README.md)  
-**ADR:** [ADR-0021](decisions/ADR-0021-host-1.0.md) … [ADR-0029](decisions/ADR-0029-host-1.0.8.md)
+**ADR:** [ADR-0021](decisions/ADR-0021-host-1.0.md) … [ADR-0030](decisions/ADR-0030-host-1.0.9.md)
 
-This is version **1.0.8** of the **host** implementation (Python 3.11 stdlib). It is not a Rust native port and not a Red/Cognition runtime. 1.0.x patches are compatible conformance fixes of 1.0.0 (Specification v0.1 unchanged).
+This is version **1.0.9** of the **host** implementation (Python 3.11 stdlib). It is not a Rust native port and not a Red/Cognition runtime. 1.0.x patches are compatible conformance fixes of 1.0.0 (Specification v0.1 unchanged).
 
 ## What 1.0 is
 
@@ -52,5 +52,7 @@ python3 ./git-up contract validate --strict
 - 1.0.5 — [ADR-0026](decisions/ADR-0026-host-1.0.5.md): `authority.sources`; `--strict` contract-shape blockers
 - 1.0.6 — [ADR-0027](decisions/ADR-0027-host-1.0.6.md): deny sudo-class executables; sha256/empty-command load checks
 - 1.0.7 — [ADR-0028](decisions/ADR-0028-host-1.0.7.md): confine `authority.sources`; `IN_PROGRESS → BLOCKED`; argv commands
+- 1.0.8 — [ADR-0029](decisions/ADR-0029-host-1.0.8.md): isolate git observation from ambient `GIT_*`
+- 1.0.9 — [ADR-0030](decisions/ADR-0030-host-1.0.9.md): empty/unknown evidence refused; unknown checkpoint state discarded
 
 No new CLI verbs. No spec bump.

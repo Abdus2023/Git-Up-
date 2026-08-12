@@ -1,4 +1,4 @@
-# Conformance audit — Specification v0.1 × host 1.0.8
+# Conformance audit — Specification v0.1 × host 1.0.9
 
 **Status:** derived (not authority)  
 **Date:** 2026-08-12
@@ -18,7 +18,7 @@ This is the audit the methodology called for. It does not authorize PASS.
 | 5 Contract identity | SHA256 canonical | `git_up/identity.py` | I-ID-1, I-ID-2 | `contract_id` on evidence | none |
 | 6 Canonicalization | List order non-semantic | `canonical.py` + identity sort | I-ID-1 | — | none |
 | 7 Provenance | validator=`git-up`; HEAD bound | `provenance_context` | I-HEAD-1, I-PASS-4 | evidence records | none |
-| 8 Evidence | Hash chain; trust prefix | `git_up/evidence.py` | I-EVID-1, I-EVID-2 | `.git-up/evidence.jsonl` | none |
+| 8 Evidence | Hash chain; trust prefix; unique id | `git_up/evidence.py` | I-EVID-1, I-EVID-2, I-EVID-3 | `.git-up/evidence.jsonl` | none |
 | 9 Validators | No shell; exact allowlist | `git_up/safety.py` | I-SAFE-1 | — | none |
 | 9b Runtime BLOCKED | IN_PROGRESS → BLOCKED for safety/toolchain | `StateStore.finish_blocked` | I-SAFE-3 | — | none |
 | 10 Execution | Declared commands only | `git_up/execute.py` | I-REC-2, I-TIMEOUT | — | none |

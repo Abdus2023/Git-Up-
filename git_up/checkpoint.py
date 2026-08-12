@@ -75,10 +75,13 @@ class StateStore:
             return
         self.last_checkpoint = str(raw.get("last_checkpoint") or "")
         self.repo_head = str(raw.get("repo_head") or "")
+        known = {s.value for s in TaskState}
         self.tasks = {}
         for rec in raw.get("tasks") or []:
             s = TaskRuntimeState.from_dict(rec)
-            if s.task_id:
+            # spec 04: unknown state — refuse; do not coerce. Skip the row
+            # so recover cannot crash on GREEN → PASS (ALLOWED is empty).
+            if s.task_id and s.state in known:
                 self.tasks[s.task_id] = s
 
     def save(self, repo_head: str = "") -> None:

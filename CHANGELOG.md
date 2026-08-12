@@ -2,6 +2,12 @@
 
 Derived history. Not authority.
 
+## 1.0.9 — 2026-08-12
+
+- Empty `evidence_id` and unknown `result` stop the trusted prefix (spec 11 / 04)
+- `append` refuses duplicate `evidence_id` instead of writing a break
+- Unknown checkpoint task states are discarded, not coerced (recover cannot crash)
+
 ## 1.0.8 — 2026-08-12
 
 - Controller git (and validators) ignore ambient `GIT_*` and user/system gitconfig

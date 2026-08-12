@@ -95,6 +95,27 @@ class RecoveryTests(unittest.TestCase):
             self.assertFalse(rec["in_progress"])
             self.assertTrue(any("crashed" in n for n in res.drift_notes))
 
+    def test_unknown_checkpoint_state_does_not_crash_recover(self):
+        """spec 04: unknown state is refused, not coerced into a transition."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = init_repo(Path(td))
+            seed_worktree(repo)
+            r1 = make_controller(repo).run(dry_run=False, execute=True)
+            self.assertEqual(r1.result, "PASS", r1.errors)
+            state = repo / ".git-up" / "state.json"
+            raw = json.loads(state.read_text(encoding="utf-8"))
+            raw["tasks"][0]["state"] = "GREEN"
+            raw["tasks"][0]["validated_pass"] = True
+            state.write_text(json.dumps(raw, indent=2) + "\n", encoding="utf-8")
+            res = make_controller(repo).run(dry_run=False, execute=False)
+            self.assertEqual(res.result, "PASS", res.errors)
+            states = {c["task_id"]: c["effective_state"]
+                      for c in res.report["classifications"]}
+            self.assertEqual(states.get("T1"), "PASS")
+            stored = json.loads(state.read_text(encoding="utf-8"))
+            rec = next(t for t in stored["tasks"] if t["task_id"] == "T1")
+            self.assertEqual(rec["state"], "PASS")
+
     def test_I_REC_1_corrupt_checkpoint(self):
         with tempfile.TemporaryDirectory() as td:
             repo = init_repo(Path(td))

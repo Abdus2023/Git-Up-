@@ -40,3 +40,5 @@ Charter invariants (spec 01 §8) plus operational MUST IDs from spec 18.
 | I-CMD-1 | command argv list canonicalizes to the string form | 05 | `test_argv_list_loads_and_matches_string_identity` |
 | I-GIT-1 | Ambient GIT_* cannot retarget HEAD/porcelain | 06, 16 §9 | `test_git_dir_does_not_steal_head` |
 | I-HEAD-2 | Dry-run empty HEAD is ENVIRONMENT | 06 §2.2 | `test_empty_head_dry_run_is_environment_blocked` |
+| I-EVID-3 | Empty evidence_id / unknown result untrusted | 11 §1–3, 04 | `test_empty_evidence_id_breaks_trust` |
+| I-REC-4 | Unknown checkpoint state discarded | 04, 14 | `test_unknown_checkpoint_state_does_not_crash_recover` |

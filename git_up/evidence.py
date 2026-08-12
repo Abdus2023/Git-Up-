@@ -105,9 +105,24 @@ class EvidenceLog:
                     return ""
         return ""
 
+    def _existing_ids(self) -> set:
+        ids = set()
+        for rec in self.read_all():
+            if isinstance(rec, dict):
+                eid = rec.get("evidence_id")
+                if eid:
+                    ids.add(eid)
+        return ids
+
     def append(self, record: EvidenceRecord) -> EvidenceRecord:
         if not record.evidence_id:
             record.evidence_id = "EVID-" + uuid.uuid4().hex[:12].upper()
+        if not record.evidence_id:
+            raise EvidenceError("empty evidence_id")
+        if record.evidence_id in self._existing_ids():
+            raise EvidenceError(
+                f"duplicate evidence_id {record.evidence_id!r}"
+            )
         record.prev_hash = self._last_record_hash()
         record.record_hash = sha256_json(record.payload_for_hash())
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -150,7 +165,11 @@ class EvidenceLog:
             if rec.get("record_hash", "") != sha256_json(payload):
                 break
             eid = rec.get("evidence_id", "")
-            if eid and eid in seen_ids:
+            if not eid:
+                break
+            if rec.get("result") not in VALID_RESULTS:
+                break
+            if eid in seen_ids:
                 break
             seen_ids.add(eid)
             trusted.append(rec)

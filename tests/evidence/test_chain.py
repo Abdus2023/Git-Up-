@@ -9,7 +9,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from git_up.evidence import EvidenceLog, EvidenceRecord
+from git_up.canonical import sha256_json
+from git_up.errors import EvidenceError
+from git_up.evidence import VALID_RESULTS, EvidenceLog, EvidenceRecord
 
 
 def _rec(**kw):
@@ -66,6 +68,57 @@ class ChainTests(unittest.TestCase):
         rec = {"result": "PASS", "exit_status": None, "expected_exit": 0,
                "command": "x"}
         self.assertFalse(EvidenceLog.is_structural_pass(rec))
+
+    def test_empty_evidence_id_breaks_trust(self):
+        with tempfile.TemporaryDirectory() as td:
+            log = EvidenceLog(Path(td) / "evidence.jsonl")
+            rec = {
+                "evidence_id": "",
+                "task_id": "T1",
+                "command": "python3 -c pass",
+                "command_id": "x",
+                "result": "PASS",
+                "exit_status": 0,
+                "expected_exit": 0,
+                "prev_hash": "",
+            }
+            rec["record_hash"] = sha256_json(rec)
+            log.path.write_text(
+                __import__("json").dumps(rec) + "\n", encoding="utf-8",
+            )
+            self.assertEqual(log.verified_records(), [])
+            self.assertFalse(log.verify_integrity()["intact"])
+
+    def test_unknown_result_breaks_trust(self):
+        with tempfile.TemporaryDirectory() as td:
+            log = EvidenceLog(Path(td) / "evidence.jsonl")
+            rec = {
+                "evidence_id": "EVID-GREEN",
+                "task_id": "T1",
+                "command": "python3 -c pass",
+                "command_id": "x",
+                "result": "GREEN",
+                "exit_status": 0,
+                "expected_exit": 0,
+                "prev_hash": "",
+            }
+            rec["record_hash"] = sha256_json(rec)
+            log.path.write_text(
+                __import__("json").dumps(rec) + "\n", encoding="utf-8",
+            )
+            self.assertEqual(log.verified_records(), [])
+            self.assertNotIn("GREEN", VALID_RESULTS)
+
+    def test_append_duplicate_id_refused(self):
+        with tempfile.TemporaryDirectory() as td:
+            log = EvidenceLog(Path(td) / "evidence.jsonl")
+            log.append(_rec(evidence_id="EVID-SAME"))
+            before = log.path.read_text(encoding="utf-8")
+            with self.assertRaises(EvidenceError) as ctx:
+                log.append(_rec(evidence_id="EVID-SAME"))
+            self.assertIn("duplicate", str(ctx.exception))
+            self.assertEqual(log.path.read_text(encoding="utf-8"), before)
+            self.assertEqual(len(log.verified_records()), 1)
 
 
 if __name__ == "__main__":
