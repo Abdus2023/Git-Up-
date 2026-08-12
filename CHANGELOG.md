@@ -2,6 +2,12 @@
 
 Derived history. Not authority.
 
+## 1.0.5 — 2026-08-12
+
+- Contract-level `authority.sources` are confined and must exist (spec 09)
+- `--strict` also fails on TRACEABILITY / spec conflict / spec gap
+- Authority refs that are not a string or object are ContractError
+
 ## 1.0.4 — 2026-08-12
 
 - Duplicate/empty tool, requirement, command, and criterion ids fail closed

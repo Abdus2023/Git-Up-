@@ -23,9 +23,11 @@ def _require_unique(ids, label: str) -> None:
         raise ContractError(f"duplicate {label}")
 
 
-def _auth(item) -> AuthorityRef:
+def _auth(item, where="authority") -> AuthorityRef:
     if isinstance(item, str):
         return AuthorityRef(path=item)
+    if not isinstance(item, dict):
+        raise ContractError(f"{where} must be a string or object")
     return AuthorityRef(
         path=str(item.get("path") or item.get("doc") or ""),
         anchor=str(item.get("anchor") or ""),
@@ -94,9 +96,15 @@ def _task(raw: dict) -> Task:
         scope=str(raw.get("scope") or ""),
         priority=int(raw.get("priority", 100)),
         order=int(raw.get("order") or raw.get("plan_order") or 0),
-        source_authority=[_auth(a) for a in (raw.get("source_authority") or [])],
+        source_authority=[
+            _auth(a, f"task {tid} source_authority")
+            for a in (raw.get("source_authority") or [])
+        ],
         requirement_refs=[str(x) for x in (raw.get("requirement_refs") or [])],
-        specification_refs=[_auth(a) for a in (raw.get("specification_refs") or [])],
+        specification_refs=[
+            _auth(a, f"task {tid} specification_refs")
+            for a in (raw.get("specification_refs") or [])
+        ],
         implementation_targets=[str(x) for x in (raw.get("implementation_targets") or [])],
         prohibited_scope=[str(x) for x in (raw.get("prohibited_scope") or [])],
         dependencies=deps,
@@ -193,6 +201,15 @@ def load_contract(path) -> Contract:
                   or raw.get("timeout_seconds") or 600)
     prov = raw.get("provenance") if isinstance(raw.get("provenance"), dict) else {}
     repo = raw.get("repository") if isinstance(raw.get("repository"), dict) else {}
+    auth_block = raw.get("authority") if isinstance(raw.get("authority"), dict) else {}
+    sources_raw = auth_block.get("sources")
+    if sources_raw is None:
+        sources_raw = raw.get("authority_sources") or []
+    if sources_raw and not isinstance(sources_raw, list):
+        raise ContractError("authority.sources must be a list")
+    authority_sources = [
+        _auth(item, "authority.sources") for item in (sources_raw or [])
+    ]
     return Contract(
         schema_version=ver,
         source_path=str(p.resolve()),
@@ -207,6 +224,7 @@ def load_contract(path) -> Contract:
             "parent_contracts": list(prov.get("parent_contracts") or []),
         },
         repository=dict(repo),
+        authority_sources=authority_sources,
     )
 
 

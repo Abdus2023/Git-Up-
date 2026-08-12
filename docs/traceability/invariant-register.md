@@ -32,3 +32,5 @@ Charter invariants (spec 01 §8) plus operational MUST IDs from spec 18.
 | I-BIND-2 | Declared repository.revision/identity enforced | 02, 05, 06 | `test_declared_revision_mismatch_fail_closed` |
 | I-REF-1 | Unique ids; coverage names a declared task | 05, 15 | `test_duplicate_command_id_rejected` |
 | I-REF-2 | Dangling requirement_ref is TRACEABILITY | 15 | `test_dangling_requirement_ref_is_traceability` |
+| I-AUTH-2 | Contract-level authority.sources must exist | 09 | `test_missing_authority_source_blocks` |
+| I-STRICT-1 | --strict fails on contract-shape blockers | 09, 15 | `test_strict_fails_on_traceability` |

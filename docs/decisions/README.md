@@ -40,3 +40,4 @@ Context → Decision → Consequences → Notes (optional).
 | [0023](ADR-0023-host-1.0.2.md) | accepted | Host 1.0.2 observation + cycles |
 | [0024](ADR-0024-host-1.0.3.md) | accepted | Host 1.0.3 repository + evidence binding |
 | [0025](ADR-0025-host-1.0.4.md) | accepted | Host 1.0.4 referential integrity + directory emit |
+| [0026](ADR-0026-host-1.0.5.md) | accepted | Host 1.0.5 authority.sources + stricter validate |

@@ -379,9 +379,11 @@ class Controller:
         self._note("classify", phase_log)
         tools = self.contract.tool_map()
         req_ids = {r.id for r in self.contract.requirements}
+        sources = list(self.contract.authority_sources or [])
         classifications = classify_all(
             self.contract.tasks, tools, self.repo_root, auth,
             requirement_ids=req_ids,
+            authority_sources=sources,
         )
         ready_queue = build_ready_queue(self.contract.tasks, classifications)
         by_id = self.contract.task_by_id()
@@ -474,6 +476,7 @@ class Controller:
                 classifications = classify_all(
                     self.contract.tasks, tools, self.repo_root, auth,
                     requirement_ids=req_ids,
+                    authority_sources=sources,
                 )
                 ready_queue = build_ready_queue(self.contract.tasks, classifications)
                 contracts = [

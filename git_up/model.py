@@ -188,6 +188,7 @@ class Contract:
     policy: dict = field(default_factory=dict)
     provenance: dict = field(default_factory=dict)
     repository: dict = field(default_factory=dict)
+    authority_sources: list = field(default_factory=list)
 
     def task_by_id(self) -> dict:
         return {t.id: t for t in self.tasks}

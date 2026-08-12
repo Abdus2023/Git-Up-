@@ -126,7 +126,8 @@ def task_may_pass(task, contract_id, evs, auth, ctx, repo_root) -> bool:
         return False
     if not (task.acceptance_criteria and task.validation_commands):
         return False
-    if authority_missing(task, repo_root):
+    extra = (ctx or {}).get("authority_sources") or []
+    if authority_missing(task, repo_root, extra_refs=extra):
         return False
     if not all(
         d.ref in auth for d in task.dependencies if d.required_state == "PASS"
@@ -156,7 +157,8 @@ def task_may_pass(task, contract_id, evs, auth, ctx, repo_root) -> bool:
 
 def explain_task(task, contract_id, evs, auth, ctx, repo_root) -> dict:
     """Derived breakdown of the authorization predicate. Never authorizes."""
-    missing_auth = authority_missing(task, repo_root)
+    extra = (ctx or {}).get("authority_sources") or []
+    missing_auth = authority_missing(task, repo_root, extra_refs=extra)
     gaps = closure_gaps(task, contract_id, evs, ctx)
     deps_ok = all(
         d.ref in auth for d in task.dependencies if d.required_state == "PASS"

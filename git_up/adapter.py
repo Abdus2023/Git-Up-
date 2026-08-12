@@ -144,13 +144,13 @@ def load_plan_dir(directory) -> dict:
     return found[0][1]
 
 
-def _auth(item) -> dict:
+def _auth(item, where="authority") -> dict:
     if isinstance(item, str):
         return {"path": item, "anchor": "", "requirement_id": ""}
     if not isinstance(item, dict):
-        return {"path": "", "anchor": "", "requirement_id": ""}
+        raise ContractError(f"{where} must be a string or object")
     return {
-        "path": str(item.get("path") or ""),
+        "path": str(item.get("path") or item.get("doc") or ""),
         "anchor": str(item.get("anchor") or ""),
         "requirement_id": str(item.get("requirement_id") or ""),
     }
@@ -277,6 +277,9 @@ def emit_contract(plan: dict, parent_ids=None) -> dict:
     repo = _declared_repository(plan.get("repository"))
     if repo:
         doc["repository"] = repo
+    sources = _declared_authority_sources(plan)
+    if sources:
+        doc["authority"] = {"sources": sources}
     return doc
 
 
@@ -292,6 +295,19 @@ def _expected_outputs(raw, task_id) -> list:
             "sha256": str(item.get("sha256") or ""),
         })
     return out
+
+
+def _declared_authority_sources(plan: dict) -> list:
+    """Pass through an explicit plan authority.sources list. Do not invent."""
+    auth = plan.get("authority") if isinstance(plan.get("authority"), dict) else {}
+    raw = auth.get("sources")
+    if raw is None:
+        raw = plan.get("authority_sources")
+    if not raw:
+        return []
+    if not isinstance(raw, list):
+        raise ContractError("plan authority.sources must be a list")
+    return [_auth(item, "authority.sources") for item in raw]
 
 
 def _declared_repository(raw) -> dict:

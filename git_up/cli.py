@@ -16,7 +16,14 @@ from .identity import repository_binding, source_identity
 from .controller import Controller
 from .errors import ContractError, GitUpError
 
-from .model import ALLOWED_TRANSITIONS, TaskState
+from .model import ALLOWED_TRANSITIONS, BlockerCategory, TaskState
+
+_STRICT_BLOCKERS = {
+    BlockerCategory.INSUFFICIENT_TASK_DEFINITION.value,
+    BlockerCategory.TRACEABILITY.value,
+    BlockerCategory.SPECIFICATION_CONFLICT.value,
+    BlockerCategory.INCOMPLETE_SPECIFICATION.value,
+}
 from .repository import git_toplevel, porcelain, read_repo_identity, repo_head
 
 
@@ -58,7 +65,8 @@ def _flag_parser() -> argparse.ArgumentParser:
     p.add_argument("--check", action="store_true",
                    help="contract emit: confinement-check the result (no execute)")
     p.add_argument("--strict", action="store_true",
-                   help="contract validate: fail on INSUFFICIENT_TASK_DEFINITION")
+                   help="contract validate: fail on contract-shape blockers "
+                        "(insufficient, traceability, spec conflict/gap)")
     p.add_argument("--a", dest="diff_a", default=None,
                    help="contract diff: left contract")
     p.add_argument("--b", dest="diff_b", default=None,
@@ -357,6 +365,7 @@ def main(argv=None) -> int:
             confine = validate_confinement(contract, repo)
             bind = validate_repository_binding(contract, repo)
             insufficient = []
+            strict_blockers = []
             if getattr(args, "strict", False):
                 ctrl = Controller(
                     contract_path=str(cpath),
@@ -366,12 +375,25 @@ def main(argv=None) -> int:
                 )
                 res = ctrl.run(dry_run=True, execute=False)
                 for c in res.report.get("classifications") or []:
-                    if c.get("blocker_class") == "INSUFFICIENT_TASK_DEFINITION":
+                    cls = c.get("blocker_class")
+                    if cls in _STRICT_BLOCKERS:
+                        strict_blockers.append(
+                            {"task_id": c["task_id"], "blocker_class": cls}
+                        )
+                    if cls == BlockerCategory.INSUFFICIENT_TASK_DEFINITION.value:
                         insufficient.append(c["task_id"])
             errors = [f"path confinement: {e}" for e in confine]
             errors.extend(f"repository binding: {e}" for e in bind)
             if insufficient:
                 errors.append("insufficient definition: " + ", ".join(insufficient))
+            other = [
+                f"{b['task_id']}={b['blocker_class']}"
+                for b in strict_blockers
+                if b["blocker_class"]
+                != BlockerCategory.INSUFFICIENT_TASK_DEFINITION.value
+            ]
+            if other:
+                errors.append("strict contract-shape blockers: " + ", ".join(other))
             payload = _envelope(
                 mode="dry-run",
                 advisory=True,
@@ -383,10 +405,11 @@ def main(argv=None) -> int:
                 confinement_errors=confine,
                 repository_binding_errors=bind,
                 insufficient_tasks=insufficient,
-                result="FAIL" if (confine or bind or insufficient) else "PASS",
+                strict_blockers=strict_blockers,
+                result="FAIL" if (confine or bind or strict_blockers) else "PASS",
                 errors=errors,
             )
-            return _emit(args, payload, 2 if (confine or bind or insufficient) else 0)
+            return _emit(args, payload, 2 if (confine or bind or strict_blockers) else 0)
 
         ctrl = _controller(args)
         if cmd == "evidence":

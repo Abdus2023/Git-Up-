@@ -10,6 +10,16 @@
     "schema_version": {
       "const": "git-up.contract.v0.1"
     },
+    "authority": {
+      "type": "object",
+      "description": "Optional contract-level sources (spec 09). Absent means none.",
+      "properties": {
+        "sources": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/authority" }
+        }
+      }
+    },
     "repository": {
       "type": "object",
       "description": "Optional bind. Absent means no repository expectation.",

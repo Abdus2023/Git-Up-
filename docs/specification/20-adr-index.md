@@ -34,6 +34,7 @@ Canonical process and list: [../decisions/README.md](../decisions/README.md).
 | [0023](../decisions/ADR-0023-host-1.0.2.md) | Host 1.0.2 observation + cycles |
 | [0024](../decisions/ADR-0024-host-1.0.3.md) | Host 1.0.3 repository + evidence binding |
 | [0025](../decisions/ADR-0025-host-1.0.4.md) | Host 1.0.4 referential integrity + directory emit |
+| [0026](../decisions/ADR-0026-host-1.0.5.md) | Host 1.0.5 authority.sources + stricter validate |
 
 ## Rules
 

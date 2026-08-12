@@ -49,6 +49,14 @@ def source_identity(contract) -> str:
     binding = repository_binding(contract)
     if binding:
         payload["repository"] = binding
+    sources = [
+        {"path": a.path, "anchor": a.anchor, "requirement_id": a.requirement_id}
+        for a in (getattr(contract, "authority_sources", None) or [])
+    ]
+    if sources:
+        payload["authority_sources"] = sorted(
+            sources, key=lambda x: (x["path"], x["anchor"], x["requirement_id"]),
+        )
     return sha256_json(payload)
 
 

@@ -5,7 +5,7 @@
 **Depends on:** Specification Freeze v0.1  
 **ADR:** [ADR-0010](decisions/ADR-0010-implementation-freeze.md) … [ADR-0021](decisions/ADR-0021-host-1.0.md)
 
-The 0.2–0.11 notes below are historical. The in-force host baseline is **1.0.4**.
+The 0.2–0.11 notes below are historical. The in-force host baseline is **1.0.5**.
 
 This freeze **authorizes implementation** of Git-Up! against specs 05–18.
 

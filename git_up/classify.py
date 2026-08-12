@@ -16,10 +16,12 @@ def tool_path_available(tool, tid: str) -> bool:
     return shutil.which(binary) is not None
 
 
-def authority_missing(task: Task, repo_root: Path) -> list:
+def authority_missing(task: Task, repo_root: Path, extra_refs=None) -> list:
     missing = []
     root = Path(repo_root).resolve()
-    for ref in list(task.source_authority) + list(task.specification_refs):
+    refs = list(task.source_authority) + list(task.specification_refs)
+    refs.extend(extra_refs or [])
+    for ref in refs:
         p = root / ref.path
         try:
             resolved = p.resolve(strict=False)
@@ -60,7 +62,7 @@ def coverage_gaps(task: Task) -> list:
 
 
 def self_blockers(task: Task, tools: dict, repo_root: Path,
-                 requirement_ids=None):
+                 requirement_ids=None, authority_sources=None):
     reasons, detail = [], []
 
     if task.spec_conflicts:
@@ -86,7 +88,9 @@ def self_blockers(task: Task, tools: dict, repo_root: Path,
     if not task.specification_refs:
         reasons.append(BlockerCategory.INSUFFICIENT_TASK_DEFINITION.value)
         detail.append("requirement lacks specification_refs")
-    missing_docs = authority_missing(task, repo_root)
+    missing_docs = authority_missing(
+        task, repo_root, extra_refs=authority_sources,
+    )
     if missing_docs:
         reasons.append(BlockerCategory.INSUFFICIENT_TASK_DEFINITION.value)
         detail.append(f"authoritative doc(s) not found on disk: {missing_docs}")
@@ -184,7 +188,8 @@ def cyclic_tasks(tasks) -> dict:
 
 
 def classify_task(task: Task, satisfied_deps: set, tools: dict, repo_root,
-                  cycle=None, known_ids=None, requirement_ids=None) -> Classification:
+                  cycle=None, known_ids=None, requirement_ids=None,
+                  authority_sources=None) -> Classification:
     if task.rejected:
         return Classification(task_id=task.id, effective_state=TaskState.REJECTED.value)
     if task.deferred:
@@ -192,6 +197,7 @@ def classify_task(task: Task, satisfied_deps: set, tools: dict, repo_root,
 
     reasons, detail = self_blockers(
         task, tools, Path(repo_root), requirement_ids=requirement_ids,
+        authority_sources=authority_sources,
     )
 
     dep_blocked = False
@@ -236,7 +242,7 @@ def classify_task(task: Task, satisfied_deps: set, tools: dict, repo_root,
 
 
 def classify_all(tasks, tools: dict, repo_root, validated_pass=None,
-                 requirement_ids=None) -> dict:
+                 requirement_ids=None, authority_sources=None) -> dict:
     """Classify every task. PASS only enters via validated_pass (reconstruction)."""
     validated_pass = set(validated_pass or [])
     cycles = cyclic_tasks(tasks)
@@ -269,6 +275,7 @@ def classify_all(tasks, tools: dict, repo_root, validated_pass=None,
                     t, satisfied, tools, repo_root,
                     cycle=cycles.get(t.id), known_ids=known_ids,
                     requirement_ids=requirement_ids,
+                    authority_sources=authority_sources,
                 )
             new[t.id] = cls
         for tid, cls in new.items():
