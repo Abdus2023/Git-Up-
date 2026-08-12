@@ -15,7 +15,7 @@ from git_up.adapter import PLAN_SCHEMA, emit_contract_file
 from git_up.cli import main
 from git_up.identity import source_identity
 from git_up.contract import load_contract
-from tests.support import init_repo, write
+from tests.support import commit_all, init_repo, write
 from tools.pipeline import run_pipeline
 
 
@@ -87,6 +87,7 @@ class LineageTests(unittest.TestCase):
             write(repo / "src" / "out.txt", "x\n")
             plan = repo / "plan.json"
             plan.write_text(json.dumps(_PLAN), encoding="utf-8")
+            commit_all(repo, "seed")
             out = repo / "c.json"
             payload = run_pipeline(
                 plan=str(plan), repo_root=str(repo), out=str(out),

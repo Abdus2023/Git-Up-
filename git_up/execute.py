@@ -25,9 +25,11 @@ def run_validation(task_id, vc, allow, contract_id, ctx, cwd, timeout) -> Eviden
     failure = None
     try:
         tokens = validate_command(vc.command, allow)
+        from .repository import controller_env
         proc = subprocess.run(
             tokens, cwd=str(cwd), shell=False,
             capture_output=True, text=True, timeout=timeout,
+            env=controller_env(),
         )
         exit_status = proc.returncode
         stdout = proc.stdout or ""

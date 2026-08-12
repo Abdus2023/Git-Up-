@@ -62,8 +62,14 @@ def coverage_gaps(task: Task) -> list:
 
 
 def self_blockers(task: Task, tools: dict, repo_root: Path,
-                 requirement_ids=None, authority_sources=None):
+                 requirement_ids=None, authority_sources=None, head=None):
     reasons, detail = [], []
+
+    # spec 06 §2.2: empty HEAD MAY be a dry-run classification blocker.
+    # Host 1.0.8 treats it as ENVIRONMENT (mutating runs already FAIL).
+    if head is not None and not head:
+        reasons.append(BlockerCategory.ENVIRONMENT.value)
+        detail.append("empty HEAD")
 
     if task.spec_conflicts:
         reasons.append(BlockerCategory.SPECIFICATION_CONFLICT.value)
@@ -189,7 +195,7 @@ def cyclic_tasks(tasks) -> dict:
 
 def classify_task(task: Task, satisfied_deps: set, tools: dict, repo_root,
                   cycle=None, known_ids=None, requirement_ids=None,
-                  authority_sources=None) -> Classification:
+                  authority_sources=None, head=None) -> Classification:
     if task.rejected:
         return Classification(task_id=task.id, effective_state=TaskState.REJECTED.value)
     if task.deferred:
@@ -197,7 +203,7 @@ def classify_task(task: Task, satisfied_deps: set, tools: dict, repo_root,
 
     reasons, detail = self_blockers(
         task, tools, Path(repo_root), requirement_ids=requirement_ids,
-        authority_sources=authority_sources,
+        authority_sources=authority_sources, head=head,
     )
 
     dep_blocked = False
@@ -242,7 +248,7 @@ def classify_task(task: Task, satisfied_deps: set, tools: dict, repo_root,
 
 
 def classify_all(tasks, tools: dict, repo_root, validated_pass=None,
-                 requirement_ids=None, authority_sources=None) -> dict:
+                 requirement_ids=None, authority_sources=None, head=None) -> dict:
     """Classify every task. PASS only enters via validated_pass (reconstruction)."""
     validated_pass = set(validated_pass or [])
     cycles = cyclic_tasks(tasks)
@@ -276,6 +282,7 @@ def classify_all(tasks, tools: dict, repo_root, validated_pass=None,
                     cycle=cycles.get(t.id), known_ids=known_ids,
                     requirement_ids=requirement_ids,
                     authority_sources=authority_sources,
+                    head=head,
                 )
             new[t.id] = cls
         for tid, cls in new.items():

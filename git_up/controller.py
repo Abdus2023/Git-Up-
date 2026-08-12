@@ -384,6 +384,7 @@ class Controller:
             self.contract.tasks, tools, self.repo_root, auth,
             requirement_ids=req_ids,
             authority_sources=sources,
+            head=self.ctx.get("head"),
         )
         ready_queue = build_ready_queue(self.contract.tasks, classifications)
         by_id = self.contract.task_by_id()
@@ -491,6 +492,7 @@ class Controller:
                     self.contract.tasks, tools, self.repo_root, auth,
                     requirement_ids=req_ids,
                     authority_sources=sources,
+                    head=self.ctx.get("head"),
                 )
                 ready_queue = build_ready_queue(self.contract.tasks, classifications)
                 contracts = [

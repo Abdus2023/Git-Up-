@@ -37,6 +37,7 @@ Canonical process and list: [../decisions/README.md](../decisions/README.md).
 | [0026](../decisions/ADR-0026-host-1.0.5.md) | Host 1.0.5 authority.sources + stricter validate |
 | [0027](../decisions/ADR-0027-host-1.0.6.md) | Host 1.0.6 privilege denial + digest/command checks |
 | [0028](../decisions/ADR-0028-host-1.0.7.md) | Host 1.0.7 confinement + BLOCKED runtime + argv |
+| [0029](../decisions/ADR-0029-host-1.0.8.md) | Host 1.0.8 isolated Git observation |
 
 ## Rules
 

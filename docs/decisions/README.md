@@ -43,3 +43,4 @@ Context → Decision → Consequences → Notes (optional).
 | [0026](ADR-0026-host-1.0.5.md) | accepted | Host 1.0.5 authority.sources + stricter validate |
 | [0027](ADR-0027-host-1.0.6.md) | accepted | Host 1.0.6 privilege denial + digest/command checks |
 | [0028](ADR-0028-host-1.0.7.md) | accepted | Host 1.0.7 confinement + BLOCKED runtime + argv |
+| [0029](ADR-0029-host-1.0.8.md) | accepted | Host 1.0.8 isolated Git observation |

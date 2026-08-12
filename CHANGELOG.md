@@ -2,6 +2,11 @@
 
 Derived history. Not authority.
 
+## 1.0.8 — 2026-08-12
+
+- Controller git (and validators) ignore ambient `GIT_*` and user/system gitconfig
+- Dry-run empty HEAD is an `ENVIRONMENT` blocker (spec 06 §2.2)
+
 ## 1.0.7 — 2026-08-12
 
 - `authority.sources` and requirement `specification_refs` are confined (spec 06 §4)

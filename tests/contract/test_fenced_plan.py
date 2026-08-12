@@ -15,7 +15,7 @@ from git_up.adapter import PLAN_SCHEMA, emit_contract, parse_plan_text
 from git_up.cli import main
 from git_up.contract import load_contract
 from git_up.errors import ContractError
-from tests.support import init_repo, make_controller, write
+from tests.support import commit_all, init_repo, make_controller, write
 
 
 _PLAN = {
@@ -62,6 +62,7 @@ class FencedPlanTests(unittest.TestCase):
             repo = init_repo(Path(td))
             write(repo / "docs" / "SPEC.md", "R1\n")
             write(repo / "src" / "out.txt", "x\n")
+            commit_all(repo, "seed")
             path = repo / "c.json"
             path.write_text(json.dumps(doc), encoding="utf-8")
             res = make_controller(repo, contract_path=path).run(dry_run=True)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 import uuid
 from pathlib import Path
@@ -13,14 +14,44 @@ from .errors import RepositoryError
 IDENTITY_REL = Path(".git-up") / "repo.identity"
 
 
+def controller_env() -> dict:
+    """Env for Git-Up! git observation and declared validators.
+
+    Ambient ``GIT_*`` must not redirect HEAD, porcelain, or toplevel
+    (spec 06 one-worktree; spec 16 §9: environment cannot widen or
+    retarget authority). User/system gitconfig is neutralized so aliases
+    cannot rewrite ``status`` / ``rev-parse``. Repo-local config remains.
+    """
+    env = os.environ.copy()
+    for key in list(env):
+        if key.startswith("GIT_"):
+            del env[key]
+    env["GIT_CONFIG_NOSYSTEM"] = "1"
+    env["GIT_CONFIG_GLOBAL"] = os.devnull
+    env["GIT_CONFIG_SYSTEM"] = os.devnull
+    env["GIT_TERMINAL_PROMPT"] = "0"
+    env["GIT_OPTIONAL_LOCKS"] = "0"
+    env["LC_ALL"] = "C"
+    return env
+
+
+def run_git(repo_root, *args, timeout=10, text=True):
+    """Run git against ``repo_root`` with a neutralized environment."""
+    cmd = ["git", "-C", str(repo_root), *args]
+    return subprocess.run(
+        cmd,
+        capture_output=True,
+        text=text,
+        timeout=timeout,
+        env=controller_env(),
+    )
+
+
 def git_toplevel(start: Optional[Path] = None) -> Path:
     cwd = Path(start or Path.cwd())
     try:
-        out = subprocess.run(
-            ["git", "rev-parse", "--show-toplevel"],
-            cwd=str(cwd), capture_output=True, text=True, timeout=10,
-        )
-        if out.returncode == 0 and out.stdout.strip():
+        out = run_git(cwd, "rev-parse", "--show-toplevel", timeout=10)
+        if out.returncode == 0 and (out.stdout or "").strip():
             return Path(out.stdout.strip()).resolve()
     except (OSError, subprocess.TimeoutExpired):
         pass
@@ -29,12 +60,9 @@ def git_toplevel(start: Optional[Path] = None) -> Path:
 
 def repo_head(repo_root) -> str:
     try:
-        out = subprocess.run(
-            ["git", "-C", str(repo_root), "rev-parse", "HEAD"],
-            capture_output=True, text=True, timeout=10,
-        )
+        out = run_git(repo_root, "rev-parse", "HEAD", timeout=10)
         if out.returncode == 0:
-            return out.stdout.strip()
+            return (out.stdout or "").strip()
     except (OSError, subprocess.TimeoutExpired):
         pass
     return ""
@@ -75,12 +103,10 @@ def parse_porcelain(raw: bytes) -> set:
 def porcelain(repo_root) -> set:
     """Best-effort set of dirty / untracked paths (spec 06 §2.3)."""
     try:
-        out = subprocess.run(
-            [
-                "git", "-C", str(repo_root), "status",
-                "--porcelain=v1", "-z", "--untracked-files=all",
-            ],
-            capture_output=True, timeout=15,
+        out = run_git(
+            repo_root,
+            "status", "--porcelain=v1", "-z", "--untracked-files=all",
+            timeout=15, text=False,
         )
         if out.returncode != 0:
             return set()

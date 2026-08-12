@@ -26,4 +26,4 @@ Contract, repository identity, task, dependency, classification, contract identi
 
 ## Next step (completed by Implementation Freeze v0.2)
 
-See [HOST-1.0.md](HOST-1.0.md). The host implementation is **1.0.7** (Specification v0.1).
+See [HOST-1.0.md](HOST-1.0.md). The host implementation is **1.0.8** (Specification v0.1).

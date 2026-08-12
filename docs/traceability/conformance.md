@@ -1,4 +1,4 @@
-# Conformance audit — Specification v0.1 × host 1.0.7
+# Conformance audit — Specification v0.1 × host 1.0.8
 
 **Status:** derived (not authority)  
 **Date:** 2026-08-12
@@ -34,6 +34,7 @@ This is the audit the methodology called for. It does not authorize PASS.
 | 27 State machine | Forbidden transitions | `StateStore.transition` | I-PASS-1 | — | none |
 | 28 Concurrency | Lock **first** | `Controller.run` | I-LOCK-1, I-LOCK-2 | phase_log | none vs spec; prior art still wrong |
 | 29 External consistency | HEAD mismatch fail-closes PASS | identity includes HEAD | I-HEAD-1 | — | no rebase policy (fail closed) |
+| 29b Git isolation | Ambient GIT_* cannot retarget observation | `controller_env` | I-GIT-1 | — | none |
 
 ## Charter
 

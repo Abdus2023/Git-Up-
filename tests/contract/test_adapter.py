@@ -15,7 +15,7 @@ from git_up.adapter import PLAN_SCHEMA, emit_contract, emit_contract_file
 from git_up.cli import main
 from git_up.contract import load_contract
 from git_up.errors import ContractError
-from tests.support import init_repo, make_controller, write
+from tests.support import commit_all, init_repo, make_controller, write
 
 
 def _complete_plan():
@@ -56,6 +56,7 @@ class AdapterTests(unittest.TestCase):
             write(repo / "src" / "out.txt", "x\n")
             plan = repo / "plan.json"
             plan.write_text(json.dumps(_complete_plan()), encoding="utf-8")
+            commit_all(repo, "seed")
             out = repo / "emitted.json"
             emit_contract_file(plan, out)
             c = load_contract(out)

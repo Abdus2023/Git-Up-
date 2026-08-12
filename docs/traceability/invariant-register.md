@@ -38,3 +38,5 @@ Charter invariants (spec 01 §8) plus operational MUST IDs from spec 18.
 | I-CONF-1 | authority.sources and requirement spec refs confined | 06 §4, 16 §4 | `test_authority_sources_dotdot_is_confinement_error` |
 | I-SAFE-3 | IN_PROGRESS → BLOCKED for unsafe/missing tool | 08 §3, 10 §2–3 | `test_unsafe_command_is_in_progress_blocked` |
 | I-CMD-1 | command argv list canonicalizes to the string form | 05 | `test_argv_list_loads_and_matches_string_identity` |
+| I-GIT-1 | Ambient GIT_* cannot retarget HEAD/porcelain | 06, 16 §9 | `test_git_dir_does_not_steal_head` |
+| I-HEAD-2 | Dry-run empty HEAD is ENVIRONMENT | 06 §2.2 | `test_empty_head_dry_run_is_environment_blocked` |

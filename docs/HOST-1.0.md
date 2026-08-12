@@ -3,9 +3,9 @@
 **Declared:** 2026-08-12  
 **Status:** IN FORCE  
 **Implements:** [Specification Freeze v0.1](specification/README.md)  
-**ADR:** [ADR-0021](decisions/ADR-0021-host-1.0.md) … [ADR-0028](decisions/ADR-0028-host-1.0.7.md)
+**ADR:** [ADR-0021](decisions/ADR-0021-host-1.0.md) … [ADR-0029](decisions/ADR-0029-host-1.0.8.md)
 
-This is version **1.0.7** of the **host** implementation (Python 3.11 stdlib). It is not a Rust native port and not a Red/Cognition runtime. 1.0.x patches are compatible conformance fixes of 1.0.0 (Specification v0.1 unchanged).
+This is version **1.0.8** of the **host** implementation (Python 3.11 stdlib). It is not a Rust native port and not a Red/Cognition runtime. 1.0.x patches are compatible conformance fixes of 1.0.0 (Specification v0.1 unchanged).
 
 ## What 1.0 is
 
