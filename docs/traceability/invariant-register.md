@@ -25,3 +25,6 @@ Charter invariants (spec 01 §8) plus operational MUST IDs from spec 18.
 | I-SAFE-2 | `&` and the spec 16 metacharacter set | 10, 16 | `test_shell_metacharacters_rejected` |
 | I-ALLOW-1 | CLI allow-tool refine-only; empty ∩ denies | 09 §5 | `test_empty_cli_allow_intersect_denies` |
 | I-REC-3 | Reconstruct PASS only via VALIDATING | 14 | `test_reconstructed_pass_via_validating` |
+| I-SCOPE-2 | prohibited_scope wins over targets | 07, 10, 16 | `test_prohibited_scope_inside_target_is_violation` |
+| I-SCOPE-3 | Rename/copy both paths observed | 06, 10 | `test_parse_porcelain_rename_includes_both_paths` |
+| I-DEP-1 | Dependency cycles never READY | 07 §4 | `test_dependency_cycle_is_blocked` |

@@ -2,6 +2,14 @@
 
 Derived history. Not authority.
 
+## 1.0.2 — 2026-08-12
+
+- `prohibited_scope` is enforced even under an allowed target
+- Porcelain uses `-z` / `-uall`; rename/copy observes both paths
+- Dependency cycles (and self-loops) are BLOCKED with an explicit chain
+- `observed_delta` records in-target product writes
+- Spec 11 §5.9: a PASS record with a scope delta cannot authorize
+
 ## 1.0.1 — 2026-08-12
 
 - Spec 10/16: reject `&` with the other shell metacharacters

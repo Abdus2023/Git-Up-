@@ -8,6 +8,7 @@ from .classify import authority_missing
 from .evidence import EvidenceLog
 from .identity import command_identity, contract_identity_for
 from .repository import target_hashes
+from .safety import scope_violation_paths
 
 
 def criterion_attestations(task, contract_id: str, task_evidence: list) -> list:
@@ -117,6 +118,15 @@ def task_may_pass(task, contract_id, evs, auth, ctx, repo_root) -> bool:
             return False
     if not expected_outputs_hold(task, repo_root):
         return False
+    # spec 11 §5.9: a PASS record that still carries a scope/prohibited
+    # delta cannot authorize.
+    for e in evs:
+        if e.get("contract_id") != contract_id:
+            continue
+        if not EvidenceLog.is_structural_pass(e):
+            continue
+        if scope_violation_paths(e.get("observed_delta") or [], task):
+            return False
     return True
 
 
@@ -137,6 +147,11 @@ def explain_task(task, contract_id, evs, auth, ctx, repo_root) -> dict:
             and e.get("result") == "PASS"
             for e in evs
         )
+    scope_ok = not any(
+        scope_violation_paths(e.get("observed_delta") or [], task)
+        for e in evs
+        if e.get("contract_id") == contract_id and EvidenceLog.is_structural_pass(e)
+    )
     structural = [
         e.get("command_id") for e in evs
         if e.get("contract_id") == contract_id and EvidenceLog.is_structural_pass(e)
@@ -151,6 +166,7 @@ def explain_task(task, contract_id, evs, auth, ctx, repo_root) -> dict:
         "closure_gaps": gaps,
         "expected_outputs_ok": outputs_ok,
         "target_hashes_ok": targets_ok,
+        "scope_ok": scope_ok,
         "structural_pass_commands": structural,
     }
 

@@ -25,6 +25,7 @@ from .lock import FileLock
 from .model import TaskState
 from .queue import build_ready_queue
 from .repository import porcelain, repo_head, target_hashes
+from .safety import is_control_artifact, is_interpreter_residue, scope_violation_paths
 
 
 @dataclass
@@ -77,29 +78,24 @@ class Controller:
         prefs.add(".git-up/")
         return prefs
 
-    @staticmethod
-    def _is_residue(path: str) -> bool:
-        """Interpreter residue is not a product write (ADR-0013)."""
-        parts = Path(path).parts
-        if "__pycache__" in parts:
-            return True
-        return path.endswith(".pyc") or path.endswith(".pyo")
-
-    def _ignore_scope(self, path: str, task) -> bool:
-        if self._is_residue(path):
-            return True
-        excl = self._artifact_prefixes()
-        if any(path == e or path.startswith(e) for e in excl):
-            return True
-        for t in [x.rstrip("/") for x in task.implementation_targets]:
-            if path == t or path.startswith(t + "/"):
-                return True
-        return False
+    def _product_delta(self, before: set, after: set) -> list:
+        """Newly dirty product paths: porcelain minus residue and control artifacts."""
+        extra = self._artifact_prefixes()
+        out = []
+        for path in sorted(after - before):
+            if is_interpreter_residue(path) or is_control_artifact(path):
+                continue
+            if any(path == e.rstrip("/") or path.startswith(e) for e in extra):
+                continue
+            out.append(path)
+        return out
 
     def _scope_violations(self, before: set, task) -> list:
         after = porcelain(self.repo_root)
-        new = after - before
-        return sorted(p for p in new if not self._ignore_scope(p, task))
+        return scope_violation_paths(
+            after - before, task,
+            extra_ignore_prefixes=self._artifact_prefixes(),
+        )
 
     def _build_execution_contract(self, task, classifications, auth):
         cls = classifications.get(task.id)
@@ -423,13 +419,10 @@ class Controller:
                     if violations:
                         rec.result = "FAIL"
                         rec.failure_class = "INTEGRATION"
-                        extra = f"scope violation: writes outside implementation_targets {violations}"
+                        extra = f"scope violation: {violations}"
                         rec.notes = (rec.notes + " | " if rec.notes else "") + extra
                     post = porcelain(self.repo_root)
-                    rec.observed_delta = sorted(
-                        p for p in (post - scope_before)
-                        if not self._ignore_scope(p, task)
-                    )
+                    rec.observed_delta = self._product_delta(scope_before, post)
                     rec.target_hashes = target_hashes(
                         task.implementation_targets, self.repo_root
                     )

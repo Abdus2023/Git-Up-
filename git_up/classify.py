@@ -122,7 +122,59 @@ def _primary(reasons: list) -> str:
     return reasons[0] if reasons else None
 
 
-def classify_task(task: Task, satisfied_deps: set, tools: dict, repo_root) -> Classification:
+def cyclic_tasks(tasks) -> dict:
+    """Strongly connected components that are real cycles (spec 07 §4).
+
+    Returns task_id → one closed path (A → B → A). Isolated self-loops included.
+    """
+    ids = {t.id for t in tasks}
+    graph = {
+        t.id: [d.ref for d in t.dependencies if d.ref in ids]
+        for t in tasks
+    }
+    index, lowlink, stack, onstack = {}, {}, [], set()
+    i = [0]
+    sccs = []
+
+    def strongconnect(v):
+        index[v] = lowlink[v] = i[0]
+        i[0] += 1
+        stack.append(v)
+        onstack.add(v)
+        for w in graph[v]:
+            if w not in index:
+                strongconnect(w)
+                lowlink[v] = min(lowlink[v], lowlink[w])
+            elif w in onstack:
+                lowlink[v] = min(lowlink[v], index[w])
+        if lowlink[v] == index[v]:
+            comp = []
+            while True:
+                w = stack.pop()
+                onstack.discard(w)
+                comp.append(w)
+                if w == v:
+                    break
+            sccs.append(comp)
+
+    for v in sorted(graph):
+        if v not in index:
+            strongconnect(v)
+
+    out = {}
+    for comp in sccs:
+        if len(comp) > 1:
+            ordered = sorted(comp)
+            path = ordered + [ordered[0]]
+            for n in comp:
+                out[n] = path
+        elif len(comp) == 1 and comp[0] in graph[comp[0]]:
+            out[comp[0]] = [comp[0], comp[0]]
+    return out
+
+
+def classify_task(task: Task, satisfied_deps: set, tools: dict, repo_root,
+                  cycle=None) -> Classification:
     if task.rejected:
         return Classification(task_id=task.id, effective_state=TaskState.REJECTED.value)
     if task.deferred:
@@ -131,6 +183,9 @@ def classify_task(task: Task, satisfied_deps: set, tools: dict, repo_root) -> Cl
     reasons, detail = self_blockers(task, tools, Path(repo_root))
 
     dep_blocked = False
+    if cycle:
+        dep_blocked = True
+        detail.append("dependency cycle: " + " → ".join(cycle))
     for dep in task.dependencies:
         if dep.required_state == TaskState.PASS.value:
             if dep.ref not in satisfied_deps:
@@ -166,6 +221,7 @@ def classify_task(task: Task, satisfied_deps: set, tools: dict, repo_root) -> Cl
 def classify_all(tasks, tools: dict, repo_root, validated_pass=None) -> dict:
     """Classify every task. PASS only enters via validated_pass (reconstruction)."""
     validated_pass = set(validated_pass or [])
+    cycles = cyclic_tasks(tasks)
     classifications = {}
     changed = True
     iterations = 0
@@ -190,7 +246,9 @@ def classify_all(tasks, tools: dict, repo_root, validated_pass=None) -> dict:
                     task_id=t.id, effective_state=TaskState.PASS.value, ready=False
                 )
             else:
-                cls = classify_task(t, satisfied, tools, repo_root)
+                cls = classify_task(
+                    t, satisfied, tools, repo_root, cycle=cycles.get(t.id),
+                )
             new[t.id] = cls
         for tid, cls in new.items():
             prev = classifications.get(tid)

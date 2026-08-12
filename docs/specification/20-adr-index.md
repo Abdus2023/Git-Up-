@@ -31,6 +31,7 @@ Canonical process and list: [../decisions/README.md](../decisions/README.md).
 | [0020](../decisions/ADR-0020-self-plan-and-strict-validate.md) | Self-plan + validate --strict |
 | [0021](../decisions/ADR-0021-host-1.0.md) | Host Implementation 1.0 |
 | [0022](../decisions/ADR-0022-host-1.0.1.md) | Host 1.0.1 conformance patch |
+| [0023](../decisions/ADR-0023-host-1.0.2.md) | Host 1.0.2 observation + cycles |
 
 ## Rules
 

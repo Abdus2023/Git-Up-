@@ -8,6 +8,55 @@ from pathlib import Path
 
 from .errors import SafetyError
 
+
+def path_under(path: str, spec: str) -> bool:
+    """True if path is spec or a descendant. Empty spec matches nothing."""
+    p = str(path or "").rstrip("/")
+    s = str(spec or "").rstrip("/")
+    if not s or not p:
+        return False
+    return p == s or p.startswith(s + "/")
+
+
+def is_interpreter_residue(path: str) -> bool:
+    """Interpreter residue is not a product write (ADR-0013)."""
+    parts = Path(path).parts
+    if "__pycache__" in parts:
+        return True
+    return path.endswith(".pyc") or path.endswith(".pyo")
+
+
+def is_control_artifact(path: str) -> bool:
+    p = str(path or "").rstrip("/")
+    return p == ".git-up" or p.startswith(".git-up/")
+
+
+def scope_violation_paths(paths, task, extra_ignore_prefixes=None) -> list:
+    """Paths that escape implementation_targets or hit prohibited_scope.
+
+    Residue and `.git-up/` are ignored. `prohibited_scope` wins even when the
+    path sits under an allowed target (spec 07 / 10 / 16).
+    """
+    extra = extra_ignore_prefixes or set()
+    bad = []
+    targets = [t.rstrip("/") for t in (task.implementation_targets or []) if t]
+    prohibited = [p.rstrip("/") for p in (task.prohibited_scope or []) if p]
+    for raw in paths or []:
+        path = str(raw).rstrip("/")
+        if not path:
+            continue
+        if is_interpreter_residue(path) or is_control_artifact(path):
+            continue
+        if any(path == e.rstrip("/") or path.startswith(e) for e in extra):
+            continue
+        if any(path_under(path, p) for p in prohibited):
+            bad.append(path)
+            continue
+        if targets and any(path_under(path, t) for t in targets):
+            continue
+        bad.append(path)
+    return sorted(set(bad))
+
 # spec 10 §2 / spec 16 §3: ; & | > < ` $ \ and ASCII controls.
 _COMMAND_REJECT = set(";|&><`$\\")
 _DENIED_EXE = {

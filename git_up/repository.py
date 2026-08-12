@@ -40,22 +40,53 @@ def repo_head(repo_root) -> str:
     return ""
 
 
+def parse_porcelain(raw: bytes) -> set:
+    """Parse `git status --porcelain=v1 -z` into a set of worktree paths.
+
+    Rename/copy records are `XY PATH\\0ORIG_PATH\\0`. Both names are observed.
+    Directory markers are normalized without a trailing slash.
+    """
+    paths = set()
+    parts = raw.split(b"\0")
+    i = 0
+    while i < len(parts):
+        entry = parts[i]
+        i += 1
+        if not entry:
+            continue
+        if len(entry) < 3:
+            continue
+        try:
+            code = entry[:2].decode("ascii")
+        except UnicodeDecodeError:
+            code = ""
+        path = entry[3:].decode("utf-8", "surrogateescape").rstrip("/")
+        if path:
+            paths.add(path)
+        if "R" in code or "C" in code:
+            if i < len(parts):
+                orig = parts[i].decode("utf-8", "surrogateescape").rstrip("/")
+                i += 1
+                if orig:
+                    paths.add(orig)
+    return paths
+
+
 def porcelain(repo_root) -> set:
-    """Best-effort set of dirty / untracked paths."""
+    """Best-effort set of dirty / untracked paths (spec 06 §2.3)."""
     try:
         out = subprocess.run(
-            ["git", "-C", str(repo_root), "status", "--porcelain"],
-            capture_output=True, text=True, timeout=15,
+            [
+                "git", "-C", str(repo_root), "status",
+                "--porcelain=v1", "-z", "--untracked-files=all",
+            ],
+            capture_output=True, timeout=15,
         )
         if out.returncode != 0:
             return set()
     except (OSError, subprocess.TimeoutExpired):
         return set()
-    paths = set()
-    for line in out.stdout.splitlines():
-        if len(line) > 3:
-            paths.add(line[3:].strip().strip('"'))
-    return paths
+    return parse_porcelain(out.stdout)
 
 
 def read_repo_identity(repo_root) -> str:

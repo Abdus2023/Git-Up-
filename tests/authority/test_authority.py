@@ -29,6 +29,47 @@ class AuthorityTests(unittest.TestCase):
                 states["T1"]["blocker_class"], "INSUFFICIENT_TASK_DEFINITION"
             )
 
+    def test_dependency_cycle_is_blocked(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = init_repo(Path(td))
+            t1 = minimal_task(
+                id="T1",
+                dependencies=[{"ref": "T2", "required_state": "PASS"}],
+            )
+            t2 = minimal_task(
+                id="T2",
+                dependencies=[{"ref": "T1", "required_state": "PASS"}],
+            )
+            reqs = [{
+                "id": "R1",
+                "specification_refs": ["docs/SPEC.md"],
+                "coverage": [
+                    {"task_id": "T1", "obligations": ["a"]},
+                    {"task_id": "T2", "obligations": ["b"]},
+                ],
+            }]
+            seed_worktree(repo, contract_doc([t1, t2], requirements=reqs))
+            res = make_controller(repo).run(dry_run=True)
+            by = {c["task_id"]: c for c in res.report["classifications"]}
+            self.assertEqual(by["T1"]["effective_state"], "BLOCKED")
+            self.assertEqual(by["T2"]["effective_state"], "BLOCKED")
+            self.assertEqual(by["T1"]["blocker_class"], "DEPENDENCY")
+            self.assertTrue(any("cycle" in d for d in by["T1"]["detail"]))
+            self.assertTrue(any("cycle" in d for d in by["T2"]["detail"]))
+
+    def test_self_loop_is_blocked(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = init_repo(Path(td))
+            t1 = minimal_task(
+                id="T1",
+                dependencies=[{"ref": "T1", "required_state": "PASS"}],
+            )
+            seed_worktree(repo, contract_doc([t1]))
+            res = make_controller(repo).run(dry_run=True)
+            by = {c["task_id"]: c for c in res.report["classifications"]}
+            self.assertEqual(by["T1"]["effective_state"], "BLOCKED")
+            self.assertTrue(any("cycle" in d for d in by["T1"]["detail"]))
+
     def test_empty_tool_set_is_insufficient(self):
         with tempfile.TemporaryDirectory() as td:
             repo = init_repo(Path(td))
