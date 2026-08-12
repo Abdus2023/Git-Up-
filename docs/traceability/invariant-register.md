@@ -28,3 +28,5 @@ Charter invariants (spec 01 §8) plus operational MUST IDs from spec 18.
 | I-SCOPE-2 | prohibited_scope wins over targets | 07, 10, 16 | `test_prohibited_scope_inside_target_is_violation` |
 | I-SCOPE-3 | Rename/copy both paths observed | 06, 10 | `test_parse_porcelain_rename_includes_both_paths` |
 | I-DEP-1 | Dependency cycles never READY | 07 §4 | `test_dependency_cycle_is_blocked` |
+| I-BIND-1 | Evidence head/repo/source must match context | 06 §6 | `test_evidence_head_field_must_match_context` |
+| I-BIND-2 | Declared repository.revision/identity enforced | 02, 05, 06 | `test_declared_revision_mismatch_fail_closed` |

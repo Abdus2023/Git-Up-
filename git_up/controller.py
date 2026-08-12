@@ -16,7 +16,7 @@ from .authorize import (
 )
 from .checkpoint import StateStore
 from .classify import classify_all
-from .contract import load_contract, validate_confinement
+from .contract import load_contract, validate_confinement, validate_repository_binding
 from .errors import ContractError, LockAcquisitionError
 from .evidence import EvidenceLog
 from .execute import contract_tool_set, effective_allowlist, run_validation
@@ -175,7 +175,9 @@ class Controller:
                 "contract_id": cid,
                 "closure": "CLOSED" if not gaps else "OPEN",
                 "closure_gaps": gaps,
-                "criterion_attestations": criterion_attestations(t, cid, evs),
+                "criterion_attestations": criterion_attestations(
+                    t, cid, evs, ctx=self.ctx,
+                ),
                 "requirement_refs": list(t.requirement_refs),
                 "specification_refs": [a.path for a in t.specification_refs],
                 "source_authority": [a.path for a in t.source_authority],
@@ -329,6 +331,9 @@ class Controller:
         confine = validate_confinement(self.contract, self.repo_root)
         if confine:
             raise ContractError("path confinement: " + "; ".join(confine))
+        bind = validate_repository_binding(self.contract, self.repo_root)
+        if bind:
+            raise ContractError("repository binding: " + "; ".join(bind))
 
         self._note("reconstruct", phase_log)
         self.ctx = provenance_context(

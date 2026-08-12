@@ -10,6 +10,16 @@
     "schema_version": {
       "const": "git-up.contract.v0.1"
     },
+    "repository": {
+      "type": "object",
+      "description": "Optional bind. Absent means no repository expectation.",
+      "properties": {
+        "identity": { "type": "string" },
+        "revision": { "type": "string" },
+        "workspace": { "type": "string" },
+        "dirty_state": {}
+      }
+    },
     "policy": {
       "type": "object",
       "required": ["failure_mode", "concurrency"],

@@ -38,3 +38,4 @@ Context → Decision → Consequences → Notes (optional).
 | [0021](ADR-0021-host-1.0.md) | accepted | Host Implementation 1.0 |
 | [0022](ADR-0022-host-1.0.1.md) | accepted | Host 1.0.1 conformance patch |
 | [0023](ADR-0023-host-1.0.2.md) | accepted | Host 1.0.2 observation + cycles |
+| [0024](ADR-0024-host-1.0.3.md) | accepted | Host 1.0.3 repository + evidence binding |

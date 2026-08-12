@@ -3,9 +3,9 @@
 **Declared:** 2026-08-12  
 **Status:** IN FORCE  
 **Implements:** [Specification Freeze v0.1](specification/README.md)  
-**ADR:** [ADR-0021](decisions/ADR-0021-host-1.0.md), [ADR-0022](decisions/ADR-0022-host-1.0.1.md), [ADR-0023](decisions/ADR-0023-host-1.0.2.md)
+**ADR:** [ADR-0021](decisions/ADR-0021-host-1.0.md) … [ADR-0024](decisions/ADR-0024-host-1.0.3.md)
 
-This is version **1.0.2** of the **host** implementation (Python 3.11 stdlib). It is not a Rust native port and not a Red/Cognition runtime. 1.0.x patches are compatible conformance fixes of 1.0.0 (Specification v0.1 unchanged).
+This is version **1.0.3** of the **host** implementation (Python 3.11 stdlib). It is not a Rust native port and not a Red/Cognition runtime. 1.0.x patches are compatible conformance fixes of 1.0.0 (Specification v0.1 unchanged).
 
 ## What 1.0 is
 
@@ -47,5 +47,6 @@ python3 ./git-up contract validate --strict
 
 - 1.0.1 — [ADR-0022](decisions/ADR-0022-host-1.0.1.md)
 - 1.0.2 — [ADR-0023](decisions/ADR-0023-host-1.0.2.md): `prohibited_scope`, porcelain rename/`-z`, dependency cycles, honest `observed_delta`
+- 1.0.3 — [ADR-0024](decisions/ADR-0024-host-1.0.3.md): evidence context bind; declared `repository` block
 
 No new CLI verbs. No spec bump.

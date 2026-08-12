@@ -174,7 +174,7 @@ def cyclic_tasks(tasks) -> dict:
 
 
 def classify_task(task: Task, satisfied_deps: set, tools: dict, repo_root,
-                  cycle=None) -> Classification:
+                  cycle=None, known_ids=None) -> Classification:
     if task.rejected:
         return Classification(task_id=task.id, effective_state=TaskState.REJECTED.value)
     if task.deferred:
@@ -186,7 +186,12 @@ def classify_task(task: Task, satisfied_deps: set, tools: dict, repo_root,
     if cycle:
         dep_blocked = True
         detail.append("dependency cycle: " + " → ".join(cycle))
+    known = set(known_ids or [])
     for dep in task.dependencies:
+        if known and dep.ref not in known:
+            dep_blocked = True
+            detail.append(f"dependency '{dep.ref}' is not a declared task")
+            continue
         if dep.required_state == TaskState.PASS.value:
             if dep.ref not in satisfied_deps:
                 dep_blocked = True
@@ -222,6 +227,7 @@ def classify_all(tasks, tools: dict, repo_root, validated_pass=None) -> dict:
     """Classify every task. PASS only enters via validated_pass (reconstruction)."""
     validated_pass = set(validated_pass or [])
     cycles = cyclic_tasks(tasks)
+    known_ids = {t.id for t in tasks}
     classifications = {}
     changed = True
     iterations = 0
@@ -247,7 +253,8 @@ def classify_all(tasks, tools: dict, repo_root, validated_pass=None) -> dict:
                 )
             else:
                 cls = classify_task(
-                    t, satisfied, tools, repo_root, cycle=cycles.get(t.id),
+                    t, satisfied, tools, repo_root,
+                    cycle=cycles.get(t.id), known_ids=known_ids,
                 )
             new[t.id] = cls
         for tid, cls in new.items():

@@ -11,7 +11,21 @@ from .repository import target_hashes
 from .safety import scope_violation_paths
 
 
-def criterion_attestations(task, contract_id: str, task_evidence: list) -> list:
+def evidence_bound_to_context(rec: dict, ctx: dict) -> bool:
+    """Spec 06 §6: authorizing evidence names the current HEAD / repo / source."""
+    if rec.get("head") != ctx.get("head", ""):
+        return False
+    if rec.get("repository_identity") != ctx.get("repo_identity", ""):
+        return False
+    if rec.get("source_identity") != ctx.get("source_identity", ""):
+        return False
+    if rec.get("validator") != VALIDATOR_IDENTITY:
+        return False
+    return True
+
+
+def criterion_attestations(task, contract_id: str, task_evidence: list,
+                          ctx=None) -> list:
     if not any(c.validator for c in task.acceptance_criteria):
         return []
     cmd_by_id = {vc.id: vc for vc in task.validation_commands}
@@ -20,6 +34,7 @@ def criterion_attestations(task, contract_id: str, task_evidence: list) -> list:
         if e.get("contract_id") == contract_id
         and e.get("task_id") == task.id
         and EvidenceLog.is_structural_pass(e)
+        and (ctx is None or evidence_bound_to_context(e, ctx))
     }
     out = []
     for c in task.acceptance_criteria:
@@ -58,7 +73,9 @@ def closure_gaps(task, contract_id: str, task_evidence: list, ctx: dict) -> list
     if not task.acceptance_criteria:
         gaps.append("acceptance criteria missing (validation -> acceptance)")
     if any(c.validator for c in task.acceptance_criteria):
-        for att in criterion_attestations(task, contract_id, task_evidence):
+        for att in criterion_attestations(
+            task, contract_id, task_evidence, ctx=ctx,
+        ):
             if att["gap"]:
                 gaps.append(
                     f"criterion '{att['criterion_id']}' {att['gap']} "
@@ -70,6 +87,7 @@ def closure_gaps(task, contract_id: str, task_evidence: list, ctx: dict) -> list
             if e.get("contract_id") == contract_id
             and e.get("task_id") == task.id
             and EvidenceLog.is_structural_pass(e)
+            and evidence_bound_to_context(e, ctx)
         }
         for vc in task.validation_commands:
             if command_identity(vc) not in pass_cmd_ids:
@@ -107,24 +125,21 @@ def task_may_pass(task, contract_id, evs, auth, ctx, repo_root) -> bool:
         return False
     if closure_gaps(task, contract_id, evs, ctx):
         return False
+    bound = [
+        e for e in evs
+        if e.get("contract_id") == contract_id
+        and EvidenceLog.is_structural_pass(e)
+        and evidence_bound_to_context(e, ctx)
+    ]
     if task.implementation_targets:
         cur = target_hashes(task.implementation_targets, repo_root)
-        if not any(
-            e.get("target_hashes") == cur
-            and e.get("contract_id") == contract_id
-            and e.get("result") == "PASS"
-            for e in evs
-        ):
+        if not any(e.get("target_hashes") == cur for e in bound):
             return False
     if not expected_outputs_hold(task, repo_root):
         return False
     # spec 11 §5.9: a PASS record that still carries a scope/prohibited
     # delta cannot authorize.
-    for e in evs:
-        if e.get("contract_id") != contract_id:
-            continue
-        if not EvidenceLog.is_structural_pass(e):
-            continue
+    for e in bound:
         if scope_violation_paths(e.get("observed_delta") or [], task):
             return False
     return True
@@ -138,24 +153,20 @@ def explain_task(task, contract_id, evs, auth, ctx, repo_root) -> dict:
         d.ref in auth for d in task.dependencies if d.required_state == "PASS"
     )
     outputs_ok = expected_outputs_hold(task, repo_root)
+    bound = [
+        e for e in evs
+        if e.get("contract_id") == contract_id
+        and EvidenceLog.is_structural_pass(e)
+        and evidence_bound_to_context(e, ctx)
+    ]
     targets_ok = True
     if task.implementation_targets:
         cur = target_hashes(task.implementation_targets, repo_root)
-        targets_ok = any(
-            e.get("target_hashes") == cur
-            and e.get("contract_id") == contract_id
-            and e.get("result") == "PASS"
-            for e in evs
-        )
+        targets_ok = any(e.get("target_hashes") == cur for e in bound)
     scope_ok = not any(
-        scope_violation_paths(e.get("observed_delta") or [], task)
-        for e in evs
-        if e.get("contract_id") == contract_id and EvidenceLog.is_structural_pass(e)
+        scope_violation_paths(e.get("observed_delta") or [], task) for e in bound
     )
-    structural = [
-        e.get("command_id") for e in evs
-        if e.get("contract_id") == contract_id and EvidenceLog.is_structural_pass(e)
-    ]
+    structural = [e.get("command_id") for e in bound]
     return {
         "task_id": task.id,
         "contract_id": contract_id,
@@ -167,6 +178,7 @@ def explain_task(task, contract_id, evs, auth, ctx, repo_root) -> dict:
         "expected_outputs_ok": outputs_ok,
         "target_hashes_ok": targets_ok,
         "scope_ok": scope_ok,
+        "context_bound": bool(bound) or not evs,
         "structural_pass_commands": structural,
     }
 

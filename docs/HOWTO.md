@@ -38,6 +38,8 @@ See `examples/contracts/example.json` and spec 05. Minimum for `READY`:
 - `policy.failure_mode = fail_closed`
 - `policy.concurrency = exclusive`
 
+Optional `repository.identity` / `repository.revision` / `repository.dirty_state: clean` bind the contract to this worktree. Absent means no bind. The host never copies a declared identity into `.git-up/repo.identity`.
+
 ## 2. Inspect without mutating
 
 ```bash

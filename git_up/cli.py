@@ -9,10 +9,13 @@ from pathlib import Path
 
 from . import REPORT_SCHEMA, __version__
 from .authorize import predicate_report
-from .contract import load_contract, validate_confinement
+from .contract import (
+    load_contract, validate_confinement, validate_repository_binding,
+)
+from .identity import repository_binding, source_identity
 from .controller import Controller
 from .errors import ContractError, GitUpError
-from .identity import source_identity
+
 from .model import ALLOWED_TRANSITIONS, TaskState
 from .repository import git_toplevel, porcelain, read_repo_identity, repo_head
 
@@ -346,6 +349,7 @@ def main(argv=None) -> int:
             cpath = _resolve_under_repo(repo, args.contract)
             contract = load_contract(cpath)
             confine = validate_confinement(contract, repo)
+            bind = validate_repository_binding(contract, repo)
             insufficient = []
             if getattr(args, "strict", False):
                 ctrl = Controller(
@@ -359,6 +363,7 @@ def main(argv=None) -> int:
                     if c.get("blocker_class") == "INSUFFICIENT_TASK_DEFINITION":
                         insufficient.append(c["task_id"])
             errors = [f"path confinement: {e}" for e in confine]
+            errors.extend(f"repository binding: {e}" for e in bind)
             if insufficient:
                 errors.append("insufficient definition: " + ", ".join(insufficient))
             payload = _envelope(
@@ -370,11 +375,12 @@ def main(argv=None) -> int:
                 schema_version_contract=contract.schema_version,
                 task_count=len(contract.tasks),
                 confinement_errors=confine,
+                repository_binding_errors=bind,
                 insufficient_tasks=insufficient,
-                result="FAIL" if (confine or insufficient) else "PASS",
+                result="FAIL" if (confine or bind or insufficient) else "PASS",
                 errors=errors,
             )
-            return _emit(args, payload, 2 if (confine or insufficient) else 0)
+            return _emit(args, payload, 2 if (confine or bind or insufficient) else 0)
 
         ctrl = _controller(args)
         if cmd == "evidence":

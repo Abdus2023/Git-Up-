@@ -3,7 +3,7 @@
 Host implementation 1.0.x of Specification v0.1. Not a Red/Cognition port.
 """
 
-__version__ = "1.0.2"
+__version__ = "1.0.3"
 VALIDATOR_IDENTITY = "git-up"
 CONTRACT_SCHEMA = "git-up.contract.v0.1"
 STATE_SCHEMA = "git-up.state.v1"

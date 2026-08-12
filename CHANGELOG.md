@@ -2,6 +2,13 @@
 
 Derived history. Not authority.
 
+## 1.0.3 — 2026-08-12
+
+- Authorizing evidence must match current HEAD / repo identity / source / validator
+- Declared `repository.identity` / `revision` / `dirty_state=clean` are enforced
+- Unknown dependency refs and malformed list items fail closed (ContractError)
+- Plan adapter passes through an explicit `repository` block; does not invent one
+
 ## 1.0.2 — 2026-08-12
 
 - `prohibited_scope` is enforced even under an allowed target

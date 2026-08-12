@@ -174,7 +174,7 @@ def _task(raw: dict, index: int) -> dict:
         "allowed_tools": [str(x) for x in (raw.get("allowed_tools") or [])],
         "validation_commands": cmds,
         "acceptance_criteria": crits,
-        "expected_outputs": list(raw.get("expected_outputs") or []),
+        "expected_outputs": _expected_outputs(raw.get("expected_outputs"), raw["id"]),
         "declared_blockers": list(raw.get("declared_blockers") or []),
         "spec_conflicts": list(raw.get("spec_conflicts") or []),
         "spec_gaps": list(raw.get("spec_gaps") or []),
@@ -221,7 +221,7 @@ def emit_contract(plan: dict, parent_ids=None) -> dict:
             "coverage": cov,
         })
     timeout = int((plan.get("policy") or {}).get("timeout_seconds") or 600)
-    return {
+    doc = {
         "schema_version": CONTRACT_SCHEMA,
         "policy": {
             "determinism": True,
@@ -238,6 +238,40 @@ def emit_contract(plan: dict, parent_ids=None) -> dict:
             "parent_contracts": list(parent_ids or []),
         },
     }
+    repo = _declared_repository(plan.get("repository"))
+    if repo:
+        doc["repository"] = repo
+    return doc
+
+
+def _expected_outputs(raw, task_id) -> list:
+    out = []
+    for item in raw or []:
+        if not isinstance(item, dict):
+            raise ContractError(
+                f"plan task {task_id}: expected_outputs entries must be objects"
+            )
+        out.append({
+            "path": str(item.get("path") or ""),
+            "sha256": str(item.get("sha256") or ""),
+        })
+    return out
+
+
+def _declared_repository(raw) -> dict:
+    """Pass through an explicit plan repository block. Do not invent fields."""
+    if not isinstance(raw, dict):
+        return {}
+    out = {}
+    if raw.get("identity"):
+        out["identity"] = raw["identity"]
+    if raw.get("revision") or raw.get("head"):
+        out["revision"] = raw.get("revision") or raw.get("head")
+    if raw.get("workspace"):
+        out["workspace"] = raw["workspace"]
+    if raw.get("dirty_state") not in (None, ""):
+        out["dirty_state"] = raw["dirty_state"]
+    return out
 
 
 def emit_contract_file(plan_path, out_path=None, parent_path=None) -> dict:

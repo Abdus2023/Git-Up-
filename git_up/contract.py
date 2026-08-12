@@ -28,8 +28,11 @@ def _auth(item) -> AuthorityRef:
 def _task(raw: dict) -> Task:
     if not isinstance(raw, dict) or not raw.get("id"):
         raise ContractError("task missing id")
+    tid = str(raw.get("id") or "")
     crits = []
     for c in raw.get("acceptance_criteria") or []:
+        if not isinstance(c, dict):
+            raise ContractError(f"task {tid}: acceptance_criteria entries must be objects")
         crits.append(AcceptanceCriterion(
             id=str(c.get("id") or ""),
             statement=str(c.get("statement") or c.get("criterion") or ""),
@@ -37,6 +40,8 @@ def _task(raw: dict) -> Task:
         ))
     cmds = []
     for v in raw.get("validation_commands") or []:
+        if not isinstance(v, dict):
+            raise ContractError(f"task {tid}: validation_commands entries must be objects")
         cmds.append(ValidationCommand(
             id=str(v.get("id") or ""),
             command=str(v.get("command") or ""),
@@ -45,12 +50,19 @@ def _task(raw: dict) -> Task:
         ))
     deps = []
     for d in raw.get("dependencies") or raw.get("dependency_refs") or []:
+        if isinstance(d, str):
+            deps.append(DependencyRef(ref=d, required_state="PASS"))
+            continue
+        if not isinstance(d, dict):
+            raise ContractError(f"task {tid}: dependency must be a string or object")
         deps.append(DependencyRef(
             ref=str(d.get("ref") or d.get("id") or ""),
             required_state=str(d.get("required_state") or "PASS"),
         ))
     blockers = []
     for b in raw.get("declared_blockers") or []:
+        if not isinstance(b, dict):
+            raise ContractError(f"task {tid}: declared_blockers entries must be objects")
         blockers.append(DeclaredBlocker(
             category=str(b.get("category") or ""),
             satisfied=bool(b.get("satisfied", False)),
@@ -59,6 +71,8 @@ def _task(raw: dict) -> Task:
         ))
     eouts = []
     for e in raw.get("expected_outputs") or []:
+        if not isinstance(e, dict):
+            raise ContractError(f"task {tid}: expected_outputs entries must be objects")
         eouts.append(ExpectedOutput(
             path=str(e.get("path") or ""),
             sha256=str(e.get("sha256") or ""),
@@ -147,6 +161,7 @@ def load_contract(path) -> Contract:
     timeout = int((policy.get("timeout_seconds") if isinstance(policy, dict) else None)
                   or raw.get("timeout_seconds") or 600)
     prov = raw.get("provenance") if isinstance(raw.get("provenance"), dict) else {}
+    repo = raw.get("repository") if isinstance(raw.get("repository"), dict) else {}
     return Contract(
         schema_version=ver,
         source_path=str(p.resolve()),
@@ -160,6 +175,7 @@ def load_contract(path) -> Contract:
             "source_identity": str(prov.get("source_identity") or ""),
             "parent_contracts": list(prov.get("parent_contracts") or []),
         },
+        repository=dict(repo),
     )
 
 
@@ -176,4 +192,46 @@ def validate_confinement(contract: Contract, repo_root) -> list:
         ):
             for tgt, reason in validate_targets(vals, repo_root, field):
                 errors.append(f"{t.id}.{field}: {tgt}: {reason}")
+    return errors
+
+
+
+def validate_repository_binding(contract: Contract, repo_root) -> list:
+    """Enforce a declared repository block (spec 02, 05, 06). Absent = no bind."""
+    from .identity import repository_binding
+    from .repository import porcelain, read_repo_identity, repo_head
+    from .safety import is_control_artifact, is_interpreter_residue
+
+    decl = repository_binding(contract)
+    if not decl:
+        return []
+    errors = []
+    if decl.get("identity"):
+        have = read_repo_identity(repo_root)
+        if have != decl["identity"]:
+            errors.append(
+                f"repository.identity declared {decl['identity']!r} "
+                f"but worktree is {have!r}"
+            )
+    if decl.get("revision"):
+        head = repo_head(repo_root)
+        if head != decl["revision"]:
+            errors.append(
+                f"repository.revision declared {decl['revision'][:12]} "
+                f"but HEAD is {head[:12] or '(empty)'}"
+            )
+    dirty = decl.get("dirty_state")
+    if dirty in (None, ""):
+        pass
+    elif dirty in ("clean", False) or dirty == {"expected": "clean"}:
+        dirt = sorted(
+            p for p in porcelain(repo_root)
+            if not is_control_artifact(p) and not is_interpreter_residue(p)
+        )
+        if dirt:
+            errors.append(
+                f"repository.dirty_state=clean but dirty paths {dirt}"
+            )
+    else:
+        errors.append(f"unknown repository.dirty_state {dirty!r}")
     return errors

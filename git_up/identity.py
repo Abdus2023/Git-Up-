@@ -46,7 +46,28 @@ def source_identity(contract) -> str:
             ),
         },
     }
+    binding = repository_binding(contract)
+    if binding:
+        payload["repository"] = binding
     return sha256_json(payload)
+
+
+def repository_binding(contract) -> dict:
+    """Declared repository binding. Empty/absent is omitted from identity."""
+    raw = getattr(contract, "repository", None) or {}
+    if not isinstance(raw, dict):
+        return {}
+    out = {}
+    ident = str(raw.get("identity") or "")
+    rev = str(raw.get("revision") or raw.get("head") or "")
+    dirty = raw.get("dirty_state")
+    if ident:
+        out["identity"] = ident
+    if rev:
+        out["revision"] = rev
+    if dirty not in (None, ""):
+        out["dirty_state"] = dirty
+    return out
 
 
 def _task_canon(t: Task) -> dict:
