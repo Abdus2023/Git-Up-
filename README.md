@@ -13,7 +13,7 @@ Any Source → Git-Up! Contract → Git-Up! Controller → Git repository
 | Freeze | Role |
 |---|---|
 | [Specification v0.1](docs/specification/README.md) | Identity, models, invariants |
-| [Implementation v0.5](docs/IMPLEMENTATION-FREEZE.md) | Crate cut + conforming `git-up` |
+| [Implementation v0.6](docs/IMPLEMENTATION-FREEZE.md) | Controller + plan adapter |
 | [Conformance audit](docs/traceability/conformance.md) | Phase → impl → test → gap |
 | [HOWTO](docs/HOWTO.md) | Operator / agent workflow |
 
@@ -31,6 +31,7 @@ A successful command is never sufficient for `PASS`.
 python3 ./git-up classify
 python3 ./git-up plan
 python3 ./git-up run --dry-run
+python3 ./git-up contract emit --from examples/plans/example.json --out /tmp/c.json
 python3 -m unittest discover -s tests -p 'test_*.py'
 ```
 
@@ -60,8 +61,8 @@ The intended native crate cut is documented in the implementation freeze. The ho
 ## CLI
 
 ```
-git-up inspect | reconstruct | contract validate | plan | classify | ready
-git-up run [--dry-run] | verify | evidence | status | recover | audit | trace
+git-up inspect | reconstruct | contract validate | contract emit | plan | classify | ready
+git-up run [--dry-run] [--until-paused] | verify | evidence | status | recover | audit | trace
 ```
 
 ## License

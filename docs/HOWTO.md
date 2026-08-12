@@ -18,6 +18,13 @@ git-up trace
 
 ## 1. Declare a contract
 
+Hand-write JSON, or emit from a plan (adapter; does not invent fields):
+
+```bash
+python3 ./git-up contract emit --from examples/plans/example.json --out /tmp/emitted.json
+python3 ./git-up --contract /tmp/emitted.json classify
+```
+
 See `examples/contracts/example.json` and spec 05. Minimum for `READY`:
 
 - authority source file that exists in the repo

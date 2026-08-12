@@ -29,3 +29,4 @@ Context → Decision → Consequences → Notes (optional).
 | [0012](ADR-0012-conformance-v0.3.md) | accepted | Conformance completion v0.3 |
 | [0013](ADR-0013-until-paused-and-residue.md) | accepted | run --until-paused + residue |
 | [0014](ADR-0014-verify-predicate.md) | accepted | verify predicate breakdown |
+| [0015](ADR-0015-adapter-emit.md) | accepted | Plan adapter + contract emit |

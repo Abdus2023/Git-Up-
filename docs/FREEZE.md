@@ -26,4 +26,4 @@ Contract, repository identity, task, dependency, classification, contract identi
 
 ## Next step (completed by Implementation Freeze v0.2)
 
-See [IMPLEMENTATION-FREEZE.md](IMPLEMENTATION-FREEZE.md). v0.5 is the conforming host implementation (crate cut + CLI surface + predicate verify).
+See [IMPLEMENTATION-FREEZE.md](IMPLEMENTATION-FREEZE.md). v0.6 adds the plan adapter (`contract emit`) on top of the conforming controller.

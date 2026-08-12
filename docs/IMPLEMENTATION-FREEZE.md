@@ -1,9 +1,9 @@
-# Git-Up! Implementation Freeze v0.5
+# Git-Up! Implementation Freeze v0.6
 
 **Declared:** 2026-08-12  
-**Status:** IN FORCE (supersedes v0.4 host surface)  
+**Status:** IN FORCE (supersedes v0.5 host surface)  
 **Depends on:** Specification Freeze v0.1  
-**ADR:** [ADR-0010](decisions/ADR-0010-implementation-freeze.md), [ADR-0012](decisions/ADR-0012-conformance-v0.3.md), [ADR-0013](decisions/ADR-0013-until-paused-and-residue.md), [ADR-0014](decisions/ADR-0014-verify-predicate.md)
+**ADR:** [ADR-0010](decisions/ADR-0010-implementation-freeze.md) … [ADR-0015](decisions/ADR-0015-adapter-emit.md)
 
 This freeze **authorizes implementation** of Git-Up! against specs 05–18.
 
@@ -50,7 +50,13 @@ Especially:
 
 `python3 -m unittest discover -s tests -p 'test_*.py'` — spec 18 IDs plus v0.3 CLI/truncation/report-lease tests.
 
-## 6. v0.5 additions
+## 6. v0.6 additions
+
+- Adapter plane: `git_up.adapter` + [docs/adapters/](adapters/README.md)
+- `git-up contract emit --from PLAN [--out CONTRACT]`
+- Plan schema `git-up.plan.v0.1` — no invented authority or validators
+
+## 6z. v0.5 additions
 
 - `git-up verify` emits a derived per-task predicate breakdown (`would_pass`, gaps, hashes)
 - [Conformance audit](traceability/conformance.md): Phase → Invariant → Implementation → Test → Evidence → Gap

@@ -23,6 +23,7 @@ Canonical process and list: [../decisions/README.md](../decisions/README.md).
 | [0012](../decisions/ADR-0012-conformance-v0.3.md) | Conformance completion v0.3 |
 | [0013](../decisions/ADR-0013-until-paused-and-residue.md) | run --until-paused + residue |
 | [0014](../decisions/ADR-0014-verify-predicate.md) | verify predicate breakdown |
+| [0015](../decisions/ADR-0015-adapter-emit.md) | Plan adapter + contract emit |
 
 ## Rules
 

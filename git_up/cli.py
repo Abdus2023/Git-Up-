@@ -28,7 +28,8 @@ def _flag_parser() -> argparse.ArgumentParser:
         prog="git-up",
         description="Git-Up! — contract-driven implementation controller.",
         epilog="commands: inspect reconstruct plan classify ready run "
-               "verify evidence status recover audit trace | contract validate",
+               "verify evidence status recover audit trace | "
+               "contract validate | contract emit",
     )
     p.add_argument("--version", action="version", version=f"git-up {__version__}")
     p.add_argument("--contract", default="git-up.contract.json",
@@ -44,6 +45,10 @@ def _flag_parser() -> argparse.ArgumentParser:
                    help="run: drain the READY queue under one lease (ADR-0013)")
     p.add_argument("--quiet", action="store_true")
     p.add_argument("--allow-tool", action="append", default=None)
+    p.add_argument("--from", dest="from_path", default=None,
+                   help="contract emit: source plan path")
+    p.add_argument("--out", dest="out_path", default=None,
+                   help="contract emit: write contract JSON here")
     return p
 
 
@@ -60,8 +65,10 @@ def _parse(argv):
         tok = unknown[i]
         if tok in _COMMANDS and cmd is None:
             cmd = tok
-            if cmd == "contract" and i + 1 < len(unknown) and unknown[i + 1] == "validate":
-                contract_cmd = "validate"
+            if cmd == "contract" and i + 1 < len(unknown) and unknown[i + 1] in (
+                "validate", "emit",
+            ):
+                contract_cmd = unknown[i + 1]
                 i += 2
                 continue
             i += 1
@@ -200,12 +207,15 @@ def main(argv=None) -> int:
         _parser.print_help()
         return 2
     if cmd == "contract":
-        if args.contract_cmd != "validate":
+        if args.contract_cmd == "validate":
+            cmd = "contract-validate"
+        elif args.contract_cmd == "emit":
+            cmd = "contract-emit"
+        else:
             return _emit(args, _envelope(
                 result="FAIL",
-                errors=["usage: git-up contract validate"],
+                errors=["usage: git-up contract validate | git-up contract emit --from PLAN"],
             ), 2)
-        cmd = "contract-validate"
 
     dry_default = cmd in {
         "inspect", "plan", "classify", "ready", "contract-validate",
@@ -249,6 +259,25 @@ def main(argv=None) -> int:
     }.get(cmd, "dry-run")
 
     try:
+        if cmd == "contract-emit":
+            from .adapter import emit_contract_file
+            if not args.from_path:
+                return _emit(args, _envelope(
+                    result="FAIL",
+                    errors=["usage: git-up contract emit --from PLAN [--out CONTRACT]"],
+                ), 2)
+            doc = emit_contract_file(args.from_path, args.out_path)
+            payload = _envelope(
+                mode="dry-run",
+                advisory=True,
+                frontier="PAUSED",
+                producer="git-up.adapter.plan",
+                out=args.out_path,
+                task_count=len(doc.get("tasks") or []),
+                contract=doc,
+            )
+            return _emit(args, payload, 0)
+
         if cmd == "contract-validate":
             repo = args.repo_root or str(git_toplevel())
             contract = load_contract(args.contract)
