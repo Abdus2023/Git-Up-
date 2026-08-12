@@ -13,7 +13,7 @@ Any Source → Git-Up! Contract → Git-Up! Controller → Git repository
 | Freeze | Role |
 |---|---|
 | [Specification v0.1](docs/specification/README.md) | Identity, models, invariants |
-| [Implementation v0.3](docs/IMPLEMENTATION-FREEZE.md) | Crate cut + conforming `git-up` |
+| [Implementation v0.4](docs/IMPLEMENTATION-FREEZE.md) | Crate cut + conforming `git-up` |
 | [HOWTO](docs/HOWTO.md) | Operator / agent workflow |
 
 ```

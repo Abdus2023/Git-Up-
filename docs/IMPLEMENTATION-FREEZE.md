@@ -1,9 +1,9 @@
-# Git-Up! Implementation Freeze v0.3
+# Git-Up! Implementation Freeze v0.4
 
 **Declared:** 2026-08-12  
-**Status:** IN FORCE (supersedes v0.2 host surface)  
+**Status:** IN FORCE (supersedes v0.3 host surface)  
 **Depends on:** Specification Freeze v0.1  
-**ADR:** [ADR-0010](decisions/ADR-0010-implementation-freeze.md), [ADR-0012](decisions/ADR-0012-conformance-v0.3.md)
+**ADR:** [ADR-0010](decisions/ADR-0010-implementation-freeze.md), [ADR-0012](decisions/ADR-0012-conformance-v0.3.md), [ADR-0013](decisions/ADR-0013-until-paused-and-residue.md)
 
 This freeze **authorizes implementation** of Git-Up! against specs 05–18.
 
@@ -50,7 +50,14 @@ Especially:
 
 `python3 -m unittest discover -s tests -p 'test_*.py'` — spec 18 IDs plus v0.3 CLI/truncation/report-lease tests.
 
-## 6. v0.3 additions
+## 6. v0.4 additions
+
+- `git-up run --until-paused` drains the READY queue under one lease
+- Interpreter residue (`__pycache__`, `*.pyc`) is not a scope violation
+- Derived [contract JSON Schema](contract.schema.json) (not authority)
+- Multi-task example: `examples/contracts/pipeline.json`
+
+## 6b. v0.3 additions
 
 - Command-specific payloads for inspect, plan, reconstruct, contract validate, verify, audit
 - `reconstruct --write` ≡ recover

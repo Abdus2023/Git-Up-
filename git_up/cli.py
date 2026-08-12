@@ -39,6 +39,8 @@ def _flag_parser() -> argparse.ArgumentParser:
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--write", action="store_true",
                    help="reconstruct: persist checkpoint (spec 17)")
+    p.add_argument("--until-paused", action="store_true",
+                   help="run: drain the READY queue under one lease (ADR-0013)")
     p.add_argument("--quiet", action="store_true")
     p.add_argument("--allow-tool", action="append", default=None)
     return p
@@ -277,7 +279,9 @@ def main(argv=None) -> int:
         locked_report = args.report if (args.report and not dry_run
                                         and _report_inside_control_plane(args)) else None
         res = ctrl.run(dry_run=dry_run, execute=execute, mode=mode,
-                       report_path=locked_report)
+                       report_path=locked_report,
+                       until_paused=bool(getattr(args, "until_paused", False)
+                                         and execute))
     except ContractError as e:
         return _emit(args, _envelope(result="FAIL", errors=[f"contract: {e}"]), 2)
     except GitUpError as e:

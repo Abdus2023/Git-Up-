@@ -21,6 +21,7 @@ Canonical process and list: [../decisions/README.md](../decisions/README.md).
 | [0010](../decisions/ADR-0010-implementation-freeze.md) | Implementation Freeze v0.2 |
 | [0011](../decisions/ADR-0011-exact-allowlist.md) | Exact allowlist match |
 | [0012](../decisions/ADR-0012-conformance-v0.3.md) | Conformance completion v0.3 |
+| [0013](../decisions/ADR-0013-until-paused-and-residue.md) | run --until-paused + residue |
 
 ## Rules
 

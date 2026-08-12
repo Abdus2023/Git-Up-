@@ -76,21 +76,29 @@ class Controller:
         prefs.add(".git-up/")
         return prefs
 
+    @staticmethod
+    def _is_residue(path: str) -> bool:
+        """Interpreter residue is not a product write (ADR-0013)."""
+        parts = Path(path).parts
+        if "__pycache__" in parts:
+            return True
+        return path.endswith(".pyc") or path.endswith(".pyo")
+
+    def _ignore_scope(self, path: str, task) -> bool:
+        if self._is_residue(path):
+            return True
+        excl = self._artifact_prefixes()
+        if any(path == e or path.startswith(e) for e in excl):
+            return True
+        for t in [x.rstrip("/") for x in task.implementation_targets]:
+            if path == t or path.startswith(t + "/"):
+                return True
+        return False
+
     def _scope_violations(self, before: set, task) -> list:
         after = porcelain(self.repo_root)
         new = after - before
-        excl = self._artifact_prefixes()
-        targets = [t.rstrip("/") for t in task.implementation_targets]
-
-        def within(p):
-            if any(p == e or p.startswith(e) for e in excl):
-                return True
-            for t in targets:
-                if p == t or p.startswith(t + "/"):
-                    return True
-            return False
-
-        return sorted(p for p in new if not within(p))
+        return sorted(p for p in new if not self._ignore_scope(p, task))
 
     def _build_execution_contract(self, task, classifications, auth):
         cls = classifications.get(task.id)
@@ -242,7 +250,7 @@ class Controller:
         return self.run(dry_run=False, execute=False)
 
     def run(self, dry_run: bool = False, execute: bool = False,
-            mode: str = "", report_path=None) -> ControllerResult:
+            mode: str = "", report_path=None, until_paused: bool = False) -> ControllerResult:
         errors, drift_notes, phase_log = [], [], []
         lock = None
 
@@ -270,6 +278,7 @@ class Controller:
             return self._run_locked(
                 dry_run, execute, errors, drift_notes, phase_log,
                 mode=mode, report_path=report_path,
+                until_paused=until_paused,
             )
         finally:
             if lock is not None:
@@ -277,7 +286,7 @@ class Controller:
                 lock.release()
 
     def _run_locked(self, dry_run, execute, errors, drift_notes, phase_log,
-                    mode="", report_path=None):
+                    mode="", report_path=None, until_paused=False):
         self.contract = load_contract(self.contract_path)
         confine = validate_confinement(self.contract, self.repo_root)
         if confine:
@@ -340,90 +349,95 @@ class Controller:
         frontier = "READY" if ready_queue else "PAUSED"
 
         if execute and not dry_run and ready_queue:
-            tid = ready_queue[0]
-            executed_task = tid
-            task = by_id[tid]
-            allow = effective_allowlist(task, self.execute_allow)
-            exec_cid = contract_identity_for(task, auth, self.ctx)
-            scope_before = porcelain(self.repo_root)
-            st = self.store.get(tid)
-            if st.state in (
-                TaskState.DISCOVERED.value,
-                TaskState.BLOCKED.value,
-                TaskState.FAIL.value,
-            ):
-                self.store.transition(tid, TaskState.READY.value)
-            self.store.begin(tid)
-            failed = False
-            last_eid = ""
-            for vc in task.validation_commands:
-                if command_identity_skip(self.log, task.id, exec_cid, vc):
-                    continue
-                rec = run_validation(
-                    task.id, vc, allow, exec_cid, self.ctx,
-                    self.repo_root, self.contract.timeout_seconds,
-                )
-                violations = self._scope_violations(scope_before, task)
-                if violations:
-                    rec.result = "FAIL"
-                    rec.failure_class = "INTEGRATION"
-                    extra = f"scope violation: writes outside implementation_targets {violations}"
-                    rec.notes = (rec.notes + " | " if rec.notes else "") + extra
-                post = porcelain(self.repo_root)
-                excl = self._artifact_prefixes()
-                rec.observed_delta = sorted(
-                    p for p in (post - scope_before)
-                    if not any(p == e or p.startswith(e) for e in excl)
-                )
-                rec.target_hashes = target_hashes(
-                    task.implementation_targets, self.repo_root
-                )
-                scope_before = post
-                new_evidence.append(rec)
-                self.log.append(rec)
-                last_eid = rec.evidence_id
-                s = self.store.get(tid)
-                if rec.evidence_id not in s.evidence_refs:
-                    s.evidence_refs.append(rec.evidence_id)
-                if rec.result != "PASS":
-                    self.store.finish_fail(tid, rec.evidence_id)
-                    why = "scope violation" if violations else f"exit {rec.exit_status}"
-                    errors.append(f"validation FAIL for {tid}: {vc.id} ({why})")
-                    failed = True
-                    break
-            if not failed:
-                self.store.enter_validating(tid)
+            budget = len(self.contract.tasks) + 1
+            while ready_queue and budget > 0:
+                budget -= 1
+                tid = ready_queue[0]
+                executed_task = tid
+                task = by_id[tid]
+                allow = effective_allowlist(task, self.execute_allow)
+                exec_cid = contract_identity_for(task, auth, self.ctx)
+                scope_before = porcelain(self.repo_root)
+                st = self.store.get(tid)
+                if st.state in (
+                    TaskState.DISCOVERED.value,
+                    TaskState.BLOCKED.value,
+                    TaskState.FAIL.value,
+                ):
+                    self.store.transition(tid, TaskState.READY.value)
+                self.store.begin(tid)
+                failed = False
+                last_eid = ""
+                for vc in task.validation_commands:
+                    if command_identity_skip(self.log, task.id, exec_cid, vc):
+                        continue
+                    rec = run_validation(
+                        task.id, vc, allow, exec_cid, self.ctx,
+                        self.repo_root, self.contract.timeout_seconds,
+                    )
+                    violations = self._scope_violations(scope_before, task)
+                    if violations:
+                        rec.result = "FAIL"
+                        rec.failure_class = "INTEGRATION"
+                        extra = f"scope violation: writes outside implementation_targets {violations}"
+                        rec.notes = (rec.notes + " | " if rec.notes else "") + extra
+                    post = porcelain(self.repo_root)
+                    rec.observed_delta = sorted(
+                        p for p in (post - scope_before)
+                        if not self._ignore_scope(p, task)
+                    )
+                    rec.target_hashes = target_hashes(
+                        task.implementation_targets, self.repo_root
+                    )
+                    scope_before = post
+                    new_evidence.append(rec)
+                    self.log.append(rec)
+                    last_eid = rec.evidence_id
+                    s = self.store.get(tid)
+                    if rec.evidence_id not in s.evidence_refs:
+                        s.evidence_refs.append(rec.evidence_id)
+                    if rec.result != "PASS":
+                        self.store.finish_fail(tid, rec.evidence_id)
+                        why = "scope violation" if violations else f"exit {rec.exit_status}"
+                        errors.append(f"validation FAIL for {tid}: {vc.id} ({why})")
+                        failed = True
+                        break
+                if not failed:
+                    self.store.enter_validating(tid)
+                    auth = authoritative_pass(
+                        self.contract, self.log, self.ctx, self.repo_root
+                    )
+                    evs = [r for r in self.log.verified_records() if r.get("task_id") == tid]
+                    cid = contract_identity_for(task, auth, self.ctx)
+                    if task_may_pass(task, cid, evs, auth, self.ctx, self.repo_root):
+                        self.store.finish_pass(tid, last_eid)
+                    else:
+                        self.store.finish_fail(tid, last_eid)
+                        if not expected_outputs_hold(task, self.repo_root):
+                            errors.append(
+                                f"result-integrity FAIL for {tid}: declared "
+                                "expected_outputs not satisfied"
+                            )
+                        else:
+                            errors.append(
+                                f"authorization predicate FAIL for {tid}"
+                            )
+                        failed = True
+
                 auth = authoritative_pass(
                     self.contract, self.log, self.ctx, self.repo_root
                 )
-                evs = [r for r in self.log.verified_records() if r.get("task_id") == tid]
-                cid = contract_identity_for(task, auth, self.ctx)
-                if task_may_pass(task, cid, evs, auth, self.ctx, self.repo_root):
-                    self.store.finish_pass(tid, last_eid)
-                else:
-                    self.store.finish_fail(tid, last_eid)
-                    if not expected_outputs_hold(task, self.repo_root):
-                        errors.append(
-                            f"result-integrity FAIL for {tid}: declared "
-                            "expected_outputs not satisfied"
-                        )
-                    else:
-                        errors.append(
-                            f"authorization predicate FAIL for {tid}"
-                        )
-
-            auth = authoritative_pass(
-                self.contract, self.log, self.ctx, self.repo_root
-            )
-            classifications = classify_all(
-                self.contract.tasks, tools, self.repo_root, auth
-            )
-            ready_queue = build_ready_queue(self.contract.tasks, classifications)
-            contracts = [
-                self._build_execution_contract(by_id[tid], classifications, auth)
-                for tid in ready_queue
-            ]
-            frontier = "READY" if ready_queue else "PAUSED"
+                classifications = classify_all(
+                    self.contract.tasks, tools, self.repo_root, auth
+                )
+                ready_queue = build_ready_queue(self.contract.tasks, classifications)
+                contracts = [
+                    self._build_execution_contract(by_id[x], classifications, auth)
+                    for x in ready_queue
+                ]
+                frontier = "READY" if ready_queue else "PAUSED"
+                if failed or not until_paused:
+                    break
 
         if not dry_run:
             self._note("checkpoint_save", phase_log)

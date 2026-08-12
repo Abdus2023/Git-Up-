@@ -44,6 +44,7 @@ The agent may change only `files_allowed_to_change` from the emitted execution c
 
 ```bash
 python3 ./git-up --contract path/to/contract.json run
+python3 ./git-up --contract path/to/contract.json run --until-paused
 python3 ./git-up --contract path/to/contract.json status
 python3 ./git-up --contract path/to/contract.json recover
 ```
