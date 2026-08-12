@@ -44,18 +44,21 @@ def run_validation(task_id, vc, allow, contract_id, ctx, cwd, timeout) -> Eviden
     except Exception as e:  # pragma: no cover
         stderr, result = f"exec error: {e}", "BLOCKED"
 
-    def clip(s: str) -> str:
+    def clip(s: str):
         if len(s) <= 4000:
-            return s
-        return s[-4000:]
+            return s, False
+        return s[-4000:], True
+
+    stdout, stdout_trunc = clip(stdout)
+    stderr, stderr_trunc = clip(stderr)
 
     return EvidenceRecord(
         evidence_id="",
         task_id=task_id,
         command=vc.command,
         command_id=command_identity(vc),
-        stdout=clip(stdout),
-        stderr=clip(stderr),
+        stdout=stdout,
+        stderr=stderr,
         exit_status=exit_status,
         result=result,
         failure_class=failure,
@@ -66,6 +69,8 @@ def run_validation(task_id, vc, allow, contract_id, ctx, cwd, timeout) -> Eviden
         head=ctx.get("head", ""),
         source_identity=ctx.get("source_identity", ""),
         validator=VALIDATOR_IDENTITY,
+        stdout_truncated=stdout_trunc,
+        stderr_truncated=stderr_trunc,
     )
 
 

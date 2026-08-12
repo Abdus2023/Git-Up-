@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -176,11 +178,14 @@ class Controller:
         return out
 
     def _report(self, classifications, ready_queue, contracts, dry_run, execute,
-                errors, drift_notes, new_evidence, executed_task, auth, phase_log):
+                errors, drift_notes, new_evidence, executed_task, auth, phase_log,
+                report_mode=""):
         new_evidence = new_evidence or []
         ev_pass = sum(1 for e in new_evidence if e.result == "PASS")
         ev_fail = sum(1 for e in new_evidence if e.result == "FAIL")
-        mode = "dry-run" if dry_run else ("execute" if execute else "recover")
+        mode = report_mode or (
+            "dry-run" if dry_run else ("execute" if execute else "recover")
+        )
         return {
             "schema_version": REPORT_SCHEMA,
             "controller": "git-up",
@@ -228,10 +233,16 @@ class Controller:
             "errors": list(errors),
         }
 
+    def _write_report_locked(self, report_path, report: dict) -> None:
+        path = Path(report_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+
     def recover(self) -> ControllerResult:
         return self.run(dry_run=False, execute=False)
 
-    def run(self, dry_run: bool = False, execute: bool = False) -> ControllerResult:
+    def run(self, dry_run: bool = False, execute: bool = False,
+            mode: str = "", report_path=None) -> ControllerResult:
         errors, drift_notes, phase_log = [], [], []
         lock = None
 
@@ -257,14 +268,16 @@ class Controller:
 
         try:
             return self._run_locked(
-                dry_run, execute, errors, drift_notes, phase_log
+                dry_run, execute, errors, drift_notes, phase_log,
+                mode=mode, report_path=report_path,
             )
         finally:
             if lock is not None:
                 self._note("release", phase_log)
                 lock.release()
 
-    def _run_locked(self, dry_run, execute, errors, drift_notes, phase_log):
+    def _run_locked(self, dry_run, execute, errors, drift_notes, phase_log,
+                    mode="", report_path=None):
         self.contract = load_contract(self.contract_path)
         confine = validate_confinement(self.contract, self.repo_root)
         if confine:
@@ -419,8 +432,12 @@ class Controller:
         report = self._report(
             classifications, ready_queue, contracts, dry_run, execute,
             errors, drift_notes, new_evidence, executed_task, auth, phase_log,
+            report_mode=mode,
         )
         result = "FAIL" if (errors or any(e.result == "FAIL" for e in new_evidence)) else "PASS"
+        report["result"] = result
+        if report_path and not dry_run:
+            self._write_report_locked(report_path, report)
         return ControllerResult(
             report=report, classifications=classifications,
             ready_queue=ready_queue, contracts=contracts,

@@ -26,3 +26,4 @@ Context → Decision → Consequences → Notes (optional).
 | [0009](ADR-0009-prior-art-reference.md) | accepted | Prior art under reference/ |
 | [0010](ADR-0010-implementation-freeze.md) | accepted | Implementation Freeze v0.2 |
 | [0011](ADR-0011-exact-allowlist.md) | accepted | Exact allowlist match |
+| [0012](ADR-0012-conformance-v0.3.md) | accepted | Conformance completion v0.3 |

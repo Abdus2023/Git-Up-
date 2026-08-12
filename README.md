@@ -13,7 +13,8 @@ Any Source → Git-Up! Contract → Git-Up! Controller → Git repository
 | Freeze | Role |
 |---|---|
 | [Specification v0.1](docs/specification/README.md) | Identity, models, invariants |
-| [Implementation v0.2](docs/IMPLEMENTATION-FREEZE.md) | Crate cut + conforming `git-up` |
+| [Implementation v0.3](docs/IMPLEMENTATION-FREEZE.md) | Crate cut + conforming `git-up` |
+| [HOWTO](docs/HOWTO.md) | Operator / agent workflow |
 
 ```
 Contract     = WHAT MAY BE DONE
@@ -26,10 +27,13 @@ A successful command is never sufficient for `PASS`.
 ## Quick start
 
 ```bash
-python3 ./git-up --contract examples/contracts/example.json classify
-python3 ./git-up --contract examples/contracts/example.json run --dry-run
+python3 ./git-up classify
+python3 ./git-up plan
+python3 ./git-up run --dry-run
 python3 -m unittest discover -s tests -p 'test_*.py'
 ```
+
+The default `--contract` is the repo-root [self-contract](git-up.contract.json).
 
 `git-up run --dry-run` is mute:
 
@@ -50,7 +54,7 @@ examples/contracts/ sample contract
 reference/          prior-art audit material only
 ```
 
-The intended native crate cut is documented in the implementation freeze. v0.2 is a Python 3 stdlib host implementation because a Rust toolchain cannot be fetched in this environment. It is **not** a port of `reference/red-cognition-controller/`.
+The intended native crate cut is documented in the implementation freeze. The host implementation is Python 3 stdlib because a Rust toolchain cannot be fetched in this environment. It is **not** a port of `reference/red-cognition-controller/`.
 
 ## CLI
 

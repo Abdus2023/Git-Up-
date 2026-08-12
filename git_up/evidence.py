@@ -42,6 +42,8 @@ class EvidenceRecord:
     validator: str = "git-up"
     target_hashes: dict = field(default_factory=dict)
     observed_delta: list = field(default_factory=list)
+    stdout_truncated: bool = False
+    stderr_truncated: bool = False
     prev_hash: str = ""
     record_hash: str = ""
 
@@ -73,6 +75,8 @@ class EvidenceRecord:
             "validator": self.validator,
             "target_hashes": dict(self.target_hashes),
             "observed_delta": list(self.observed_delta),
+            "stdout_truncated": bool(self.stdout_truncated),
+            "stderr_truncated": bool(self.stderr_truncated),
             "prev_hash": self.prev_hash,
             "record_hash": self.record_hash,
         }

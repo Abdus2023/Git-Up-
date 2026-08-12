@@ -1,9 +1,9 @@
-# Git-Up! Implementation Freeze v0.2
+# Git-Up! Implementation Freeze v0.3
 
 **Declared:** 2026-08-12  
-**Status:** IN FORCE  
+**Status:** IN FORCE (supersedes v0.2 host surface)  
 **Depends on:** Specification Freeze v0.1  
-**ADR:** [ADR-0010](decisions/ADR-0010-implementation-freeze.md)
+**ADR:** [ADR-0010](decisions/ADR-0010-implementation-freeze.md), [ADR-0012](decisions/ADR-0012-conformance-v0.3.md)
 
 This freeze **authorizes implementation** of Git-Up! against specs 05–18.
 
@@ -48,9 +48,18 @@ Especially:
 
 ## 5. Discharge
 
-`python3 -m unittest discover -s tests -p 'test_*.py'` — spec 18 IDs I-PASS-1…5, I-LOCK-1/2, I-DRY-1, I-EVID-1/2, I-REC-1/2, I-SCOPE-1, I-SAFE-1, I-ID-1/2, I-HEAD-1, I-AUTH-1, I-COV-1, I-LEDGER-1.
+`python3 -m unittest discover -s tests -p 'test_*.py'` — spec 18 IDs plus v0.3 CLI/truncation/report-lease tests.
 
-## 6. Out of scope for v0.2
+## 6. v0.3 additions
+
+- Command-specific payloads for inspect, plan, reconstruct, contract validate, verify, audit
+- `reconstruct --write` ≡ recover
+- Evidence `stdout_truncated` / `stderr_truncated`
+- `--report` inside `.git-up/` refused in dry-run; mutating writes occur before lease release
+- Root `git-up.contract.json` self-contract (validator = spec 18 suite)
+- [HOWTO](HOWTO.md)
+
+## 7. Out of scope for v0.3
 
 - Adapters (Stages 1–4)
 - Network service / multi-repo

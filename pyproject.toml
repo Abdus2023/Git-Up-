@@ -1,0 +1,18 @@
+[project]
+name = "git-up"
+version = "0.3.0"
+description = "Contract-driven Git implementation and verification controller"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.11"
+authors = [{ name = "Git-Up! contributors" }]
+
+[project.scripts]
+git-up = "git_up.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["git_up*"]
