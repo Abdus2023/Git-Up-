@@ -57,6 +57,8 @@ python3 ./git-up --contract path/to/contract.json recover
 
 Do not invoke `git-up run` on the self-contract from inside those unit tests.
 
+After a successful `git-up run` here, `git-up status` reports `T-SPEC18 = PASS` and `git-up evidence` shows a chain-verified record. That is Git-Up! authorizing its own suite — not a unit test declaring itself green.
+
 ## 5. Exit codes
 
 | Code | Meaning |
