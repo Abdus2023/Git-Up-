@@ -1,0 +1,26 @@
+# 20 — Architecture Decision Record Index
+
+**Status:** FROZEN  
+**Freeze:** Git-Up! Specification v0.1
+
+Canonical process and list: [../decisions/README.md](../decisions/README.md).
+
+## Accepted at freeze v0.1
+
+| ADR | Title |
+|---|---|
+| [0001](../decisions/ADR-0001-independence.md) | Git-Up! is independent of Red/Cognition |
+| [0002](../decisions/ADR-0002-two-planes.md) | Contract plane and execution plane |
+| [0003](../decisions/ADR-0003-contract-identity.md) | SHA256 canonical contract identity |
+| [0004](../decisions/ADR-0004-lock-first.md) | Exclusive lease acquired before reconstruction |
+| [0005](../decisions/ADR-0005-pass-authorization.md) | PASS only via VALIDATING + predicate |
+| [0006](../decisions/ADR-0006-adapters-not-core.md) | Stages 1–4 are adapters |
+| [0007](../decisions/ADR-0007-dry-run.md) | Dry-run is first-class and mute |
+| [0008](../decisions/ADR-0008-implementation-posture.md) | Spec first; Rust intent; no crate cut yet |
+| [0009](../decisions/ADR-0009-prior-art-reference.md) | Prior-art Python lives under reference/ only |
+
+## Rules
+
+1. Every semantic change to a FROZEN spec requires a new ADR and a freeze bump.
+2. ADRs are append-only. Supersession is recorded, not silent rewrite.
+3. An ADR cannot weaken a charter invariant (spec 01 §8) without a major version.

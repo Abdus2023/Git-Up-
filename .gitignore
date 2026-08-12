@@ -1,0 +1,19 @@
+# Git-Up! runtime artifacts (never commit controller state)
+.git-up/
+
+# Rust
+/target/
+**/*.rs.bk
+Cargo.lock
+
+# Editors / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Python leftovers (prior-art reference may be executed locally)
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
