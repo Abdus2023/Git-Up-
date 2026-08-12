@@ -26,6 +26,7 @@ python3 ./git-up contract emit --from examples/plans/example.md --out /tmp/emitt
 python3 ./git-up contract emit --from examples/plans/example.json --out /tmp/v2.json --parent /tmp/emitted.json
 python3 ./git-up --contract /tmp/emitted.json classify
 python3 tools/pipeline.py --plan examples/plans/example.json --out /tmp/c.json
+python3 ./git-up contract diff /tmp/emitted.json /tmp/v2.json
 ```
 
 See `examples/contracts/example.json` and spec 05. Minimum for `READY`:

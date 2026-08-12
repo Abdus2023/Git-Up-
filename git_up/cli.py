@@ -29,7 +29,7 @@ def _flag_parser() -> argparse.ArgumentParser:
         description="Git-Up! — contract-driven implementation controller.",
         epilog="commands: inspect reconstruct plan classify ready run "
                "verify evidence status recover audit trace | "
-               "contract validate | contract emit",
+               "contract validate | contract emit | contract diff",
     )
     p.add_argument("--version", action="version", version=f"git-up {__version__}")
     p.add_argument("--contract", default="git-up.contract.json",
@@ -53,6 +53,10 @@ def _flag_parser() -> argparse.ArgumentParser:
                    help="contract emit: previous contract for explicit lineage")
     p.add_argument("--check", action="store_true",
                    help="contract emit: confinement-check the result (no execute)")
+    p.add_argument("--a", dest="diff_a", default=None,
+                   help="contract diff: left contract")
+    p.add_argument("--b", dest="diff_b", default=None,
+                   help="contract diff: right contract")
     return p
 
 
@@ -70,7 +74,7 @@ def _parse(argv):
         if tok in _COMMANDS and cmd is None:
             cmd = tok
             if cmd == "contract" and i + 1 < len(unknown) and unknown[i + 1] in (
-                "validate", "emit",
+                "validate", "emit", "diff",
             ):
                 contract_cmd = unknown[i + 1]
                 i += 2
@@ -201,10 +205,13 @@ def _audit_notes(res, args) -> list:
 def main(argv=None) -> int:
     _parser, args = _parse(argv)
     cmd = args.command
-    if getattr(args, "leftover", None):
+    leftover = getattr(args, "leftover", None) or []
+    if leftover and not (
+        args.command == "contract" and args.contract_cmd == "diff"
+    ):
         return _emit(args, _envelope(
             result="FAIL",
-            errors=[f"unknown command or arguments: {args.leftover}"],
+            errors=[f"unknown command or arguments: {leftover}"],
             mode="dry-run",
         ), 2)
     if cmd is None:
@@ -215,10 +222,12 @@ def main(argv=None) -> int:
             cmd = "contract-validate"
         elif args.contract_cmd == "emit":
             cmd = "contract-emit"
+        elif args.contract_cmd == "diff":
+            cmd = "contract-diff"
         else:
             return _emit(args, _envelope(
                 result="FAIL",
-                errors=["usage: git-up contract validate | git-up contract emit --from PLAN"],
+                errors=["usage: git-up contract validate | emit | diff"],
             ), 2)
 
     dry_default = cmd in {
@@ -307,6 +316,27 @@ def main(argv=None) -> int:
                 contract=doc,
             )
             return _emit(args, payload, 2 if confine else 0)
+
+        if cmd == "contract-diff":
+            from .diff import diff_contracts
+            paths = list(leftover)
+            left = getattr(args, "diff_a", None) or (paths[0] if paths else None)
+            right = getattr(args, "diff_b", None) or (paths[1] if len(paths) > 1 else None)
+            if not left or not right:
+                return _emit(args, _envelope(
+                    result="FAIL",
+                    errors=["usage: git-up contract diff A.json B.json"],
+                ), 2)
+            delta = diff_contracts(load_contract(left), load_contract(right))
+            payload = _envelope(
+                mode="dry-run",
+                advisory=True,
+                frontier="PAUSED",
+                a=str(Path(left).resolve()),
+                b=str(Path(right).resolve()),
+                **delta,
+            )
+            return _emit(args, payload, 0)
 
         if cmd == "contract-validate":
             repo = args.repo_root or str(git_toplevel())

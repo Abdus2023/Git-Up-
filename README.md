@@ -13,7 +13,7 @@ Any Source → Git-Up! Contract → Git-Up! Controller → Git repository
 | Freeze | Role |
 |---|---|
 | [Specification v0.1](docs/specification/README.md) | Identity, models, invariants |
-| [Implementation v0.9](docs/IMPLEMENTATION-FREEZE.md) | Controller + adapters + pipeline tool |
+| [Implementation v0.10](docs/IMPLEMENTATION-FREEZE.md) | Controller + adapters + pipeline + diff |
 | [Conformance audit](docs/traceability/conformance.md) | Phase → impl → test → gap |
 | [HOWTO](docs/HOWTO.md) | Operator / agent workflow |
 
@@ -62,7 +62,7 @@ The intended native crate cut is documented in the implementation freeze. The ho
 ## CLI
 
 ```
-git-up inspect | reconstruct | contract validate | contract emit | plan | classify | ready
+git-up inspect | reconstruct | contract validate | contract emit | contract diff | plan | classify | ready
 git-up run [--dry-run] [--until-paused] | verify | evidence | status | recover | audit | trace
 ```
 

@@ -1,9 +1,9 @@
-# Git-Up! Implementation Freeze v0.9
+# Git-Up! Implementation Freeze v0.10
 
 **Declared:** 2026-08-12  
-**Status:** IN FORCE (supersedes v0.8 host surface)  
+**Status:** IN FORCE (supersedes v0.9 host surface)  
 **Depends on:** Specification Freeze v0.1  
-**ADR:** [ADR-0010](decisions/ADR-0010-implementation-freeze.md) … [ADR-0018](decisions/ADR-0018-pipeline-and-lineage.md)
+**ADR:** [ADR-0010](decisions/ADR-0010-implementation-freeze.md) … [ADR-0019](decisions/ADR-0019-contract-diff.md)
 
 This freeze **authorizes implementation** of Git-Up! against specs 05–18.
 
@@ -50,7 +50,12 @@ Especially:
 
 `python3 -m unittest discover -s tests -p 'test_*.py'` — spec 18 IDs plus v0.3 CLI/truncation/report-lease tests.
 
-## 6. v0.9 additions
+## 6. v0.10 additions
+
+- `git-up contract diff A B` — document/plan/task identity delta (not “better”)
+- [CHANGELOG.md](../CHANGELOG.md) (derived)
+
+## 6v. v0.9 additions
 
 - `contract emit --parent PREV` records explicit lineage (`parent_contracts`)
 - `contract emit --check` confinement-checks without executing
