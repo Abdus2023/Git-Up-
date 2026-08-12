@@ -442,6 +442,20 @@ class Controller:
                     s = self.store.get(tid)
                     if rec.evidence_id not in s.evidence_refs:
                         s.evidence_refs.append(rec.evidence_id)
+                    if rec.result == "BLOCKED":
+                        # spec 08: safety / missing tool before VALIDATING
+                        # is IN_PROGRESS → BLOCKED, not FAIL (spec 10 keeps
+                        # scope/exit as FAIL).
+                        self.store.finish_blocked(tid, rec.evidence_id)
+                        why = (
+                            rec.failure_class or rec.notes or rec.stderr
+                            or "blocked"
+                        )
+                        errors.append(
+                            f"validation BLOCKED for {tid}: {vc.id} ({why})"
+                        )
+                        failed = True
+                        break
                     if rec.result != "PASS":
                         self.store.finish_fail(tid, rec.evidence_id)
                         why = "scope violation" if violations else f"exit {rec.exit_status}"

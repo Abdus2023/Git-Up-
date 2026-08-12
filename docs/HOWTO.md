@@ -38,6 +38,9 @@ See `examples/contracts/example.json` and spec 05. Minimum for `READY`:
 - `allowed_tools` (bare names)
 - `policy.failure_mode = fail_closed`
 - `policy.concurrency = exclusive`
+- every named path confined (no `..`, no `.git`, no absolute) — including contract-level `authority.sources`
+
+A validation `command` may be a string or an argv list of strings. The host canonicalizes a list with `shlex.join`; it does not invent tokens.
 
 Optional `repository.identity` / `repository.revision` / `repository.dirty_state: clean` bind the contract to this worktree. Absent means no bind. The host never copies a declared identity into `.git-up/repo.identity`.
 

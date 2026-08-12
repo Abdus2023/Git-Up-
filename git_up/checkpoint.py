@@ -136,6 +136,14 @@ class StateStore:
         if evidence_id and evidence_id not in s.evidence_refs:
             s.evidence_refs.append(evidence_id)
 
+    def finish_blocked(self, task_id: str, evidence_id: str) -> None:
+        """IN_PROGRESS → BLOCKED (spec 08: safety/toolchain before VALIDATING)."""
+        self.transition(task_id, TaskState.BLOCKED.value)
+        s = self.get(task_id)
+        s.in_progress = False
+        if evidence_id and evidence_id not in s.evidence_refs:
+            s.evidence_refs.append(evidence_id)
+
     def finish_fail(self, task_id: str, evidence_id: str) -> None:
         # FAIL is reachable from IN_PROGRESS or VALIDATING.
         s = self.get(task_id)

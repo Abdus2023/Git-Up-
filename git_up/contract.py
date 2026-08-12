@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+import shlex
 from pathlib import Path
 
 _SHA256_HEX = re.compile(r"^[0-9a-fA-F]{64}$")
@@ -24,6 +25,35 @@ def _require_unique(ids, label: str) -> None:
         raise ContractError(f"empty {label}")
     if len(ids) != len(set(ids)):
         raise ContractError(f"duplicate {label}")
+
+
+def coerce_command(raw, *, where: str, allow_empty: bool = False) -> str:
+    """Normalize spec 05 argv-or-string into a single command string.
+
+    A list is joined with ``shlex.join`` so ``shlex.split`` at execute
+    time recovers the same tokens. Invalid types fail closed.
+    """
+    if raw is None:
+        cmd = ""
+    elif isinstance(raw, str):
+        cmd = raw
+    elif isinstance(raw, (list, tuple)):
+        if not raw:
+            cmd = ""
+        else:
+            tokens = []
+            for i, tok in enumerate(raw):
+                if not isinstance(tok, str):
+                    raise ContractError(f"{where}: argv[{i}] must be a string")
+                if tok == "":
+                    raise ContractError(f"{where}: argv[{i}] is empty")
+                tokens.append(tok)
+            cmd = shlex.join(tokens)
+    else:
+        raise ContractError(f"{where}: command must be a string or argv list")
+    if not allow_empty and not str(cmd).strip():
+        raise ContractError(f"{where}: empty command")
+    return cmd
 
 
 def _auth(item, where="authority") -> AuthorityRef:
@@ -55,8 +85,12 @@ def _task(raw: dict) -> Task:
     for v in raw.get("validation_commands") or []:
         if not isinstance(v, dict):
             raise ContractError(f"task {tid}: validation_commands entries must be objects")
-        cmd = str(v.get("command") or "")
         cid = str(v.get("id") or "")
+        cmd = coerce_command(
+            v.get("command"),
+            where=f"task {tid}: validation command {cid!r}",
+            allow_empty=not cid,
+        )
         if cid and not cmd.strip():
             raise ContractError(
                 f"task {tid}: validation command {cid!r} has an empty command"
@@ -245,7 +279,7 @@ def load_contract(path) -> Contract:
 
 
 def validate_confinement(contract: Contract, repo_root) -> list:
-    """Fail-closed path checks. Returns a list of error strings."""
+    """Fail-closed path checks (spec 06 §4 / 16 §4)."""
     errors = []
     for t in contract.tasks:
         for field, vals in (
@@ -257,6 +291,21 @@ def validate_confinement(contract: Contract, repo_root) -> list:
         ):
             for tgt, reason in validate_targets(vals, repo_root, field):
                 errors.append(f"{t.id}.{field}: {tgt}: {reason}")
+    source_paths = [
+        a.path for a in (contract.authority_sources or []) if a.path
+    ]
+    for tgt, reason in validate_targets(
+        source_paths, repo_root, "authority.sources",
+    ):
+        errors.append(f"authority.sources: {tgt}: {reason}")
+    for req in contract.requirements:
+        req_paths = [p for p in (req.specification_refs or []) if p]
+        for tgt, reason in validate_targets(
+            req_paths, repo_root, "requirement.specification_refs",
+        ):
+            errors.append(
+                f"requirement {req.id}.specification_refs: {tgt}: {reason}"
+            )
     return errors
 
 

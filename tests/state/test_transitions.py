@@ -43,6 +43,27 @@ class TransitionTests(unittest.TestCase):
             self.assertTrue(store.get("T1").validated_pass)
             self.assertFalse(store.get("T1").in_progress)
 
+    def test_in_progress_to_blocked_allowed(self):
+        with tempfile.TemporaryDirectory() as td:
+            store = StateStore(Path(td) / "state.json")
+            store.load()
+            store.transition("T1", TaskState.READY.value)
+            store.begin("T1")
+            store.finish_blocked("T1", "EVID-B")
+            self.assertEqual(store.get("T1").state, TaskState.BLOCKED.value)
+            self.assertFalse(store.get("T1").in_progress)
+            self.assertIn("EVID-B", store.get("T1").evidence_refs)
+
+    def test_validating_to_blocked_rejected(self):
+        with tempfile.TemporaryDirectory() as td:
+            store = StateStore(Path(td) / "state.json")
+            store.load()
+            store.transition("T1", TaskState.READY.value)
+            store.begin("T1")
+            store.enter_validating("T1")
+            with self.assertRaises(TransitionError):
+                store.finish_blocked("T1", "EVID-B")
+
     def test_validating_to_pass_allowed(self):
         with tempfile.TemporaryDirectory() as td:
             store = StateStore(Path(td) / "state.json")

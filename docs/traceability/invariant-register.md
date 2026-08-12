@@ -35,3 +35,6 @@ Charter invariants (spec 01 §8) plus operational MUST IDs from spec 18.
 | I-AUTH-2 | Contract-level authority.sources must exist | 09 | `test_missing_authority_source_blocks` |
 | I-STRICT-1 | --strict fails on contract-shape blockers | 09, 15 | `test_strict_fails_on_traceability` |
 | I-PRIV-1 | sudo-class executables denied even if allowlisted | 16 §8 | `test_sudo_blocked_even_if_allowlisted` |
+| I-CONF-1 | authority.sources and requirement spec refs confined | 06 §4, 16 §4 | `test_authority_sources_dotdot_is_confinement_error` |
+| I-SAFE-3 | IN_PROGRESS → BLOCKED for unsafe/missing tool | 08 §3, 10 §2–3 | `test_unsafe_command_is_in_progress_blocked` |
+| I-CMD-1 | command argv list canonicalizes to the string form | 05 | `test_argv_list_loads_and_matches_string_identity` |

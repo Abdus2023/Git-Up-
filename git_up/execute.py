@@ -40,7 +40,7 @@ def run_validation(task_id, vc, allow, contract_id, ctx, cwd, timeout) -> Eviden
     except subprocess.TimeoutExpired as e:
         stderr, result, failure = f"timeout: {e}", "FAIL", "TEST"
     except FileNotFoundError as e:
-        stderr, result = f"tool not found: {e}", "BLOCKED"
+        stderr, result, failure = f"tool not found: {e}", "BLOCKED", "TOOLCHAIN"
     except Exception as e:  # pragma: no cover
         stderr, result = f"exec error: {e}", "BLOCKED"
 

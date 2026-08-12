@@ -14,6 +14,7 @@ from pathlib import Path
 
 from . import CONTRACT_SCHEMA
 from .canonical import sha256_json
+from .contract import coerce_command
 from .errors import ContractError
 
 PLAN_SCHEMA = "git-up.plan.v0.1"
@@ -165,7 +166,11 @@ def _task(raw: dict, index: int) -> dict:
             continue
         cmds.append({
             "id": str(v.get("id") or ""),
-            "command": str(v.get("command") or ""),
+            "command": coerce_command(
+                v.get("command"),
+                where=f"plan task {raw.get('id')} command",
+                allow_empty=True,
+            ),
             "expected_exit": int(v.get("expected_exit", 0)),
             "purpose": str(v.get("purpose") or ""),
         })

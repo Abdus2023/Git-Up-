@@ -2,6 +2,13 @@
 
 Derived history. Not authority.
 
+## 1.0.7 — 2026-08-12
+
+- `authority.sources` and requirement `specification_refs` are confined (spec 06 §4)
+- `IN_PROGRESS → BLOCKED` for unsafe/missing-tool evidence; scope/exit stay FAIL
+- Missing binary records `failure_class: TOOLCHAIN`
+- Validation `command` accepts an argv list (canonicalized with shlex.join)
+
 ## 1.0.6 — 2026-08-12
 
 - `sudo` / `su` / `doas` / `pkexec` denied even if allowlisted (spec 16 §8)

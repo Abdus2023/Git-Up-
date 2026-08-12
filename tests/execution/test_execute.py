@@ -89,6 +89,53 @@ class ExecutionTests(unittest.TestCase):
                 refined.contracts[0].get("effective_allowlist"), ["python3"]
             )
 
+    def test_unsafe_command_is_in_progress_blocked(self):
+        """Spec 08: safety failure before VALIDATING is BLOCKED, not FAIL."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = init_repo(Path(td))
+            task = minimal_task(
+                allowed_tools=["bash", "python3"],
+                required_tools=["python3"],
+                validation_commands=[{
+                    "id": "v1",
+                    "command": "bash -c echo hi",
+                    "expected_exit": 0,
+                    "purpose": "denied-shell",
+                }],
+            )
+            seed_worktree(repo, contract_doc([task]))
+            ctrl = make_controller(repo)
+            res = ctrl.run(dry_run=False, execute=True)
+            self.assertEqual(res.result, "FAIL")
+            self.assertTrue(res.new_evidence)
+            self.assertEqual(res.new_evidence[0]["result"], "BLOCKED")
+            self.assertTrue(any("BLOCKED" in e for e in res.errors), res.errors)
+            self.assertEqual(ctrl.store.get("T1").state, "BLOCKED")
+            self.assertNotEqual(ctrl.store.get("T1").state, "FAIL")
+            self.assertNotEqual(ctrl.store.get("T1").state, "VALIDATING")
+
+    def test_missing_binary_is_toolchain_blocked(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = init_repo(Path(td))
+            task = minimal_task(
+                allowed_tools=["python3", "git-up-missing-tool"],
+                validation_commands=[{
+                    "id": "v1",
+                    "command": "git-up-missing-tool --version",
+                    "expected_exit": 0,
+                    "purpose": "missing",
+                }],
+            )
+            seed_worktree(repo, contract_doc([task]))
+            ctrl = make_controller(repo)
+            res = ctrl.run(dry_run=False, execute=True)
+            self.assertEqual(res.result, "FAIL")
+            self.assertTrue(res.new_evidence)
+            rec = res.new_evidence[0]
+            self.assertEqual(rec["result"], "BLOCKED")
+            self.assertEqual(rec["failure_class"], "TOOLCHAIN")
+            self.assertEqual(ctrl.store.get("T1").state, "BLOCKED")
+
     def test_I_REC_2_no_reexec(self):
         with tempfile.TemporaryDirectory() as td:
             repo = init_repo(Path(td))

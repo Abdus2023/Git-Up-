@@ -1,4 +1,4 @@
-# Conformance audit — Specification v0.1 × host 1.0.6
+# Conformance audit — Specification v0.1 × host 1.0.7
 
 **Status:** derived (not authority)  
 **Date:** 2026-08-12
@@ -14,12 +14,13 @@ This is the audit the methodology called for. It does not authorize PASS.
 | 1 State model | Explicit VALIDATING; no READY→PASS | `git_up/model.py` ALLOWED_TRANSITIONS | I-PASS-1 | self-contract after `run` | none |
 | 2 Classification | Fail-closed; never writes PASS | `git_up/classify.py` | I-AUTH-1, I-COV-1, I-PASS-5 | `git-up classify` | none |
 | 3 Dependencies | Only PASS is auto-satisfiable | `classify_task` | I-PASS-5 | pipeline example | none |
-| 4 Authority | Hierarchy; missing doc blocks | `authority_missing` | I-AUTH-1 | — | none |
+| 4 Authority | Hierarchy; missing doc blocks | `authority_missing` + confine `authority.sources` | I-AUTH-1, I-CONF-1 | — | none |
 | 5 Contract identity | SHA256 canonical | `git_up/identity.py` | I-ID-1, I-ID-2 | `contract_id` on evidence | none |
 | 6 Canonicalization | List order non-semantic | `canonical.py` + identity sort | I-ID-1 | — | none |
 | 7 Provenance | validator=`git-up`; HEAD bound | `provenance_context` | I-HEAD-1, I-PASS-4 | evidence records | none |
 | 8 Evidence | Hash chain; trust prefix | `git_up/evidence.py` | I-EVID-1, I-EVID-2 | `.git-up/evidence.jsonl` | none |
 | 9 Validators | No shell; exact allowlist | `git_up/safety.py` | I-SAFE-1 | — | none |
+| 9b Runtime BLOCKED | IN_PROGRESS → BLOCKED for safety/toolchain | `StateStore.finish_blocked` | I-SAFE-3 | — | none |
 | 10 Execution | Declared commands only | `git_up/execute.py` | I-REC-2, I-TIMEOUT | — | none |
 | 11 Result integrity | Target hashes + expected outputs | `task_may_pass` | I-PASS-2, I-SCOPE-1 | — | none |
 | 12 PASS authorization | Predicate; no shortcuts | `authorize.py` + VALIDATING | I-PASS-1…5 | `git-up verify` | none |
