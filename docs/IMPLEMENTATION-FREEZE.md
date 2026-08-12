@@ -1,9 +1,9 @@
-# Git-Up! Implementation Freeze v0.8
+# Git-Up! Implementation Freeze v0.9
 
 **Declared:** 2026-08-12  
-**Status:** IN FORCE (supersedes v0.7 host surface)  
+**Status:** IN FORCE (supersedes v0.8 host surface)  
 **Depends on:** Specification Freeze v0.1  
-**ADR:** [ADR-0010](decisions/ADR-0010-implementation-freeze.md) … [ADR-0017](decisions/ADR-0017-plan-source-identity.md)
+**ADR:** [ADR-0010](decisions/ADR-0010-implementation-freeze.md) … [ADR-0018](decisions/ADR-0018-pipeline-and-lineage.md)
 
 This freeze **authorizes implementation** of Git-Up! against specs 05–18.
 
@@ -50,7 +50,13 @@ Especially:
 
 `python3 -m unittest discover -s tests -p 'test_*.py'` — spec 18 IDs plus v0.3 CLI/truncation/report-lease tests.
 
-## 6. v0.8 additions
+## 6. v0.9 additions
+
+- `contract emit --parent PREV` records explicit lineage (`parent_contracts`)
+- `contract emit --check` confinement-checks without executing
+- `tools/pipeline.py` — mute emit → validate → classify
+
+## 6w. v0.8 additions
 
 - Emitted contracts carry `provenance.source_identity = SHA256(canonical(plan))`
 - `load_contract` persists provenance; contract identity includes it

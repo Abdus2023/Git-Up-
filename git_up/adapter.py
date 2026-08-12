@@ -183,7 +183,7 @@ def _task(raw: dict, index: int) -> dict:
     }
 
 
-def emit_contract(plan: dict) -> dict:
+def emit_contract(plan: dict, parent_ids=None) -> dict:
     """Translate a plan into a contract document. Does not guess."""
     if not isinstance(plan, dict):
         raise ContractError("plan must be a JSON object")
@@ -235,14 +235,20 @@ def emit_contract(plan: dict) -> dict:
         "provenance": {
             "producer": "git-up.adapter.plan",
             "source_identity": sha256_json(plan),
-            "parent_contracts": [],
+            "parent_contracts": list(parent_ids or []),
         },
     }
 
 
-def emit_contract_file(plan_path, out_path=None) -> dict:
+def emit_contract_file(plan_path, out_path=None, parent_path=None) -> dict:
+    from .contract import load_contract
+    from .identity import source_identity
+
     plan = load_plan(plan_path)
-    doc = emit_contract(plan)
+    parents = []
+    if parent_path:
+        parents = [source_identity(load_contract(parent_path))]
+    doc = emit_contract(plan, parent_ids=parents)
     if out_path:
         dest = Path(out_path)
         dest.parent.mkdir(parents=True, exist_ok=True)

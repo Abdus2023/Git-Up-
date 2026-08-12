@@ -26,6 +26,7 @@ Canonical process and list: [../decisions/README.md](../decisions/README.md).
 | [0015](../decisions/ADR-0015-adapter-emit.md) | Plan adapter + contract emit |
 | [0016](../decisions/ADR-0016-fenced-plan.md) | Fenced plans only; no prose parse |
 | [0017](../decisions/ADR-0017-plan-source-identity.md) | Bind emitted contracts to plan hash |
+| [0018](../decisions/ADR-0018-pipeline-and-lineage.md) | Explicit lineage, emit --check, pipeline tool |
 
 ## Rules
 

@@ -49,6 +49,10 @@ def _flag_parser() -> argparse.ArgumentParser:
                    help="contract emit: source plan path")
     p.add_argument("--out", dest="out_path", default=None,
                    help="contract emit: write contract JSON here")
+    p.add_argument("--parent", dest="parent_path", default=None,
+                   help="contract emit: previous contract for explicit lineage")
+    p.add_argument("--check", action="store_true",
+                   help="contract emit: confinement-check the result (no execute)")
     return p
 
 
@@ -266,17 +270,43 @@ def main(argv=None) -> int:
                     result="FAIL",
                     errors=["usage: git-up contract emit --from PLAN [--out CONTRACT]"],
                 ), 2)
-            doc = emit_contract_file(args.from_path, args.out_path)
+            doc = emit_contract_file(
+                args.from_path, args.out_path, parent_path=args.parent_path,
+            )
+            confine = []
+            if args.check:
+                import tempfile
+                repo = args.repo_root or str(git_toplevel())
+                check_path = args.out_path
+                tmp = None
+                if not check_path:
+                    tmp = tempfile.NamedTemporaryFile(
+                        "w", suffix=".json", delete=False, encoding="utf-8",
+                    )
+                    tmp.write(json.dumps(doc, indent=2) + "\n")
+                    tmp.close()
+                    check_path = tmp.name
+                try:
+                    loaded = load_contract(check_path)
+                    confine = validate_confinement(loaded, repo)
+                finally:
+                    if tmp is not None:
+                        Path(tmp.name).unlink(missing_ok=True)
             payload = _envelope(
                 mode="dry-run",
                 advisory=True,
                 frontier="PAUSED",
                 producer="git-up.adapter.plan",
                 out=args.out_path,
+                parent=args.parent_path,
+                parent_contracts=(doc.get("provenance") or {}).get("parent_contracts"),
                 task_count=len(doc.get("tasks") or []),
+                confinement_errors=confine,
+                result="FAIL" if confine else "PASS",
+                errors=[f"path confinement: {e}" for e in confine],
                 contract=doc,
             )
-            return _emit(args, payload, 0)
+            return _emit(args, payload, 2 if confine else 0)
 
         if cmd == "contract-validate":
             repo = args.repo_root or str(git_toplevel())

@@ -32,3 +32,4 @@ Context → Decision → Consequences → Notes (optional).
 | [0015](ADR-0015-adapter-emit.md) | accepted | Plan adapter + contract emit |
 | [0016](ADR-0016-fenced-plan.md) | accepted | Fenced plans only; no prose parse |
 | [0017](ADR-0017-plan-source-identity.md) | accepted | Bind emitted contracts to plan hash |
+| [0018](ADR-0018-pipeline-and-lineage.md) | accepted | Explicit lineage, emit --check, pipeline tool |

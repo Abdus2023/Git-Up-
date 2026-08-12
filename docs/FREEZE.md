@@ -26,4 +26,4 @@ Contract, repository identity, task, dependency, classification, contract identi
 
 ## Next step (completed by Implementation Freeze v0.2)
 
-See [IMPLEMENTATION-FREEZE.md](IMPLEMENTATION-FREEZE.md). v0.8 binds emitted contracts to the plan identity.
+See [IMPLEMENTATION-FREEZE.md](IMPLEMENTATION-FREEZE.md). v0.9 adds explicit contract lineage, emit --check, and a dry-run pipeline tool.

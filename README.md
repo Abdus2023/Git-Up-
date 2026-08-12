@@ -13,7 +13,7 @@ Any Source → Git-Up! Contract → Git-Up! Controller → Git repository
 | Freeze | Role |
 |---|---|
 | [Specification v0.1](docs/specification/README.md) | Identity, models, invariants |
-| [Implementation v0.8](docs/IMPLEMENTATION-FREEZE.md) | Controller + plan/fence adapters |
+| [Implementation v0.9](docs/IMPLEMENTATION-FREEZE.md) | Controller + adapters + pipeline tool |
 | [Conformance audit](docs/traceability/conformance.md) | Phase → impl → test → gap |
 | [HOWTO](docs/HOWTO.md) | Operator / agent workflow |
 
@@ -52,7 +52,8 @@ git-up              CLI driver
 git_up/             host implementation (A–M module map)
 tests/              spec 18 invariant suites
 docs/               frozen specification + ADRs
-examples/contracts/ sample contract
+examples/           sample contracts and plans
+tools/              mute pipeline (not the controller)
 reference/          prior-art audit material only
 ```
 

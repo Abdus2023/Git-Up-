@@ -1,6 +1,6 @@
 [project]
 name = "git-up"
-version = "0.8.0"
+version = "0.9.0"
 description = "Contract-driven Git implementation and verification controller"
 readme = "README.md"
 license = { file = "LICENSE" }
