@@ -2,6 +2,13 @@
 
 Derived history. Not authority.
 
+## 1.0.4 — 2026-08-12
+
+- Duplicate/empty tool, requirement, command, and criterion ids fail closed
+- Coverage must name a declared task; dangling requirement_refs are TRACEABILITY
+- `contract emit --from DIR` requires exactly one plan among `*.json`/`*.md`
+- `contract emit --check` also enforces a declared repository bind
+
 ## 1.0.3 — 2026-08-12
 
 - Authorizing evidence must match current HEAD / repo identity / source / validator

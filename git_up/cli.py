@@ -288,7 +288,7 @@ def main(argv=None) -> int:
             doc = emit_contract_file(
                 args.from_path, args.out_path, parent_path=args.parent_path,
             )
-            confine = []
+            confine, bind = [], []
             if args.check:
                 import tempfile
                 repo = args.repo_root or str(git_toplevel())
@@ -304,9 +304,14 @@ def main(argv=None) -> int:
                 try:
                     loaded = load_contract(check_path)
                     confine = validate_confinement(loaded, repo)
+                    bind = validate_repository_binding(loaded, repo)
                 finally:
                     if tmp is not None:
                         Path(tmp.name).unlink(missing_ok=True)
+            check_errors = (
+                [f"path confinement: {e}" for e in confine]
+                + [f"repository binding: {e}" for e in bind]
+            )
             payload = _envelope(
                 mode="dry-run",
                 advisory=True,
@@ -317,11 +322,12 @@ def main(argv=None) -> int:
                 parent_contracts=(doc.get("provenance") or {}).get("parent_contracts"),
                 task_count=len(doc.get("tasks") or []),
                 confinement_errors=confine,
-                result="FAIL" if confine else "PASS",
-                errors=[f"path confinement: {e}" for e in confine],
+                repository_binding_errors=bind,
+                result="FAIL" if check_errors else "PASS",
+                errors=check_errors,
                 contract=doc,
             )
-            return _emit(args, payload, 2 if confine else 0)
+            return _emit(args, payload, 2 if check_errors else 0)
 
         if cmd == "contract-diff":
             from .diff import diff_contracts
@@ -425,6 +431,9 @@ def main(argv=None) -> int:
             repository_identity=read_repo_identity(repo),
             head=repo_head(repo),
             dirty_paths=sorted(porcelain(repo)),
+            declared_repository=(
+                repository_binding(ctrl.contract) if ctrl.contract else {}
+            ),
             evidence_integrity=res.report.get("evidence_integrity"),
             provenance=(ctrl.contract.provenance if ctrl.contract else {}),
             result=res.result,

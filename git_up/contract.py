@@ -15,6 +15,14 @@ from .model import (
 from .safety import validate_targets
 
 
+def _require_unique(ids, label: str) -> None:
+    ids = [str(i) for i in ids]
+    if any(not i for i in ids):
+        raise ContractError(f"empty {label}")
+    if len(ids) != len(set(ids)):
+        raise ContractError(f"duplicate {label}")
+
+
 def _auth(item) -> AuthorityRef:
     if isinstance(item, str):
         return AuthorityRef(path=item)
@@ -77,6 +85,8 @@ def _task(raw: dict) -> Task:
             path=str(e.get("path") or ""),
             sha256=str(e.get("sha256") or ""),
         ))
+    _require_unique((c.id for c in cmds), f"task {tid} validation command id")
+    _require_unique((c.id for c in crits), f"task {tid} acceptance criterion id")
     return Task(
         id=str(raw["id"]),
         title=str(raw.get("title") or ""),
@@ -124,20 +134,32 @@ def load_contract(path) -> Contract:
 
     tools = []
     for t in raw.get("tools") or raw.get("tool_registry") or []:
-        if isinstance(t, dict):
-            tools.append(Tool(
-                id=str(t.get("id") or ""),
-                available=bool(t.get("available", False)),
-                binary=str(t.get("binary") or t.get("id") or ""),
-                version=str(t.get("version") or ""),
-                evidence=str(t.get("evidence") or ""),
-                detail=str(t.get("detail") or ""),
-            ))
+        if not isinstance(t, dict):
+            raise ContractError("tools entries must be objects")
+        if not t.get("id"):
+            raise ContractError("tool missing id")
+        tools.append(Tool(
+            id=str(t.get("id") or ""),
+            available=bool(t.get("available", False)),
+            binary=str(t.get("binary") or t.get("id") or ""),
+            version=str(t.get("version") or ""),
+            evidence=str(t.get("evidence") or ""),
+            detail=str(t.get("detail") or ""),
+        ))
+    _require_unique((t.id for t in tools), "tool id")
 
     reqs = []
     for r in raw.get("requirements") or []:
+        if not isinstance(r, dict):
+            raise ContractError("requirements entries must be objects")
+        if not r.get("id"):
+            raise ContractError("requirement missing id")
         cov = []
         for c in r.get("coverage") or []:
+            if not isinstance(c, dict):
+                raise ContractError(
+                    f"requirement {r['id']}: coverage entries must be objects"
+                )
             cov.append(CoverageEntry(
                 task_id=str(c.get("task_id") or ""),
                 obligations=list(c.get("obligations") or []),
@@ -147,6 +169,7 @@ def load_contract(path) -> Contract:
             specification_refs=[str(x) for x in (r.get("specification_refs") or [])],
             coverage=cov,
         ))
+    _require_unique((r.id for r in reqs), "requirement id")
 
     tasks_raw = raw.get("tasks")
     if tasks_raw is None and isinstance(raw.get("task"), dict):
@@ -154,9 +177,17 @@ def load_contract(path) -> Contract:
     if not tasks_raw:
         raise ContractError("contract has no tasks")
     tasks = [_task(t) for t in tasks_raw]
-    ids = [t.id for t in tasks]
-    if len(ids) != len(set(ids)):
-        raise ContractError("duplicate task id")
+    _require_unique((t.id for t in tasks), "task id")
+    task_ids = {t.id for t in tasks}
+    for r in reqs:
+        for c in r.coverage:
+            if not c.task_id:
+                raise ContractError(f"requirement {r.id}: coverage missing task_id")
+            if c.task_id not in task_ids:
+                raise ContractError(
+                    f"requirement {r.id}: coverage task_id {c.task_id!r} "
+                    "is not a declared task"
+                )
 
     timeout = int((policy.get("timeout_seconds") if isinstance(policy, dict) else None)
                   or raw.get("timeout_seconds") or 600)

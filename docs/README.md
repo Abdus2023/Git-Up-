@@ -2,7 +2,7 @@
 
 This tree is the **Specification Freeze v0.1**.
 
-Specification Freeze v0.1 remains the identity/invariant baseline. The host implementation in force is [Host 1.0.3](HOST-1.0.md).
+Specification Freeze v0.1 remains the identity/invariant baseline. The host implementation in force is [Host 1.0.4](HOST-1.0.md).
 
 ## Start here
 

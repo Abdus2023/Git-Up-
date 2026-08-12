@@ -167,4 +167,5 @@ def provenance_context(repo_root, contract, *, create_identity: bool) -> dict:
         "validator": VALIDATOR_IDENTITY,
         "tool_versions": {t.id: t.version for t in contract.tools},
         "timeout_seconds": contract.timeout_seconds,
+        "requirement_ids": [r.id for r in contract.requirements if r.id],
     }

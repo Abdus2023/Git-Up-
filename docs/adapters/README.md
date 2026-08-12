@@ -35,6 +35,7 @@ A design note or issue may carry **exactly one** fenced plan. Prose is ignored (
 python3 ./git-up contract emit --from examples/plans/example.json --out /tmp/c.json
 python3 ./git-up contract emit --from examples/plans/example.md --out /tmp/c.json
 python3 ./git-up contract emit --from - --out /tmp/c.json < examples/plans/example.json
+# directory: exactly one *.json / *.md plan; 0 or >1 fails closed
 python3 ./git-up --contract /tmp/c.json classify
 ```
 

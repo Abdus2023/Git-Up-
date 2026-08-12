@@ -59,7 +59,8 @@ def coverage_gaps(task: Task) -> list:
     return gaps
 
 
-def self_blockers(task: Task, tools: dict, repo_root: Path):
+def self_blockers(task: Task, tools: dict, repo_root: Path,
+                 requirement_ids=None):
     reasons, detail = [], []
 
     if task.spec_conflicts:
@@ -104,6 +105,15 @@ def self_blockers(task: Task, tools: dict, repo_root: Path):
     for gap in coverage_gaps(task):
         reasons.append(BlockerCategory.INSUFFICIENT_TASK_DEFINITION.value)
         detail.append(gap)
+
+    if requirement_ids is not None:
+        declared = set(requirement_ids)
+        for ref in task.requirement_refs:
+            if ref not in declared:
+                reasons.append(BlockerCategory.TRACEABILITY.value)
+                detail.append(
+                    f"requirement_ref '{ref}' is not a declared requirement"
+                )
 
     for b in task.declared_blockers:
         if not b.satisfied:
@@ -174,13 +184,15 @@ def cyclic_tasks(tasks) -> dict:
 
 
 def classify_task(task: Task, satisfied_deps: set, tools: dict, repo_root,
-                  cycle=None, known_ids=None) -> Classification:
+                  cycle=None, known_ids=None, requirement_ids=None) -> Classification:
     if task.rejected:
         return Classification(task_id=task.id, effective_state=TaskState.REJECTED.value)
     if task.deferred:
         return Classification(task_id=task.id, effective_state=TaskState.DEFERRED.value)
 
-    reasons, detail = self_blockers(task, tools, Path(repo_root))
+    reasons, detail = self_blockers(
+        task, tools, Path(repo_root), requirement_ids=requirement_ids,
+    )
 
     dep_blocked = False
     if cycle:
@@ -223,7 +235,8 @@ def classify_task(task: Task, satisfied_deps: set, tools: dict, repo_root,
     )
 
 
-def classify_all(tasks, tools: dict, repo_root, validated_pass=None) -> dict:
+def classify_all(tasks, tools: dict, repo_root, validated_pass=None,
+                 requirement_ids=None) -> dict:
     """Classify every task. PASS only enters via validated_pass (reconstruction)."""
     validated_pass = set(validated_pass or [])
     cycles = cyclic_tasks(tasks)
@@ -255,6 +268,7 @@ def classify_all(tasks, tools: dict, repo_root, validated_pass=None) -> dict:
                 cls = classify_task(
                     t, satisfied, tools, repo_root,
                     cycle=cycles.get(t.id), known_ids=known_ids,
+                    requirement_ids=requirement_ids,
                 )
             new[t.id] = cls
         for tid, cls in new.items():

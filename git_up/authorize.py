@@ -66,6 +66,15 @@ def closure_gaps(task, contract_id: str, task_evidence: list, ctx: dict) -> list
     gaps = []
     if not task.requirement_refs:
         gaps.append("requirement missing (requirement -> specification)")
+    declared = (ctx or {}).get("requirement_ids")
+    if declared is not None:
+        declared_set = set(declared)
+        for ref in task.requirement_refs:
+            if ref not in declared_set:
+                gaps.append(
+                    f"requirement '{ref}' is not declared "
+                    "(requirement -> specification)"
+                )
     if not task.specification_refs:
         gaps.append("specification missing (specification -> task)")
     if not task.validation_commands:

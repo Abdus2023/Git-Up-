@@ -30,3 +30,5 @@ Charter invariants (spec 01 §8) plus operational MUST IDs from spec 18.
 | I-DEP-1 | Dependency cycles never READY | 07 §4 | `test_dependency_cycle_is_blocked` |
 | I-BIND-1 | Evidence head/repo/source must match context | 06 §6 | `test_evidence_head_field_must_match_context` |
 | I-BIND-2 | Declared repository.revision/identity enforced | 02, 05, 06 | `test_declared_revision_mismatch_fail_closed` |
+| I-REF-1 | Unique ids; coverage names a declared task | 05, 15 | `test_duplicate_command_id_rejected` |
+| I-REF-2 | Dangling requirement_ref is TRACEABILITY | 15 | `test_dangling_requirement_ref_is_traceability` |

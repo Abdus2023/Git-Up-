@@ -97,15 +97,51 @@ def parse_plan_text(text: str, *, source: str = "<text>") -> dict:
     )
 
 
+_PLAN_SUFFIXES = {".json", ".md", ".markdown"}
+
+
 def load_plan(path) -> dict:
     if str(path) == "-":
         return parse_plan_text(sys.stdin.read(), source="<stdin>")
     p = Path(path)
+    if p.is_dir():
+        return load_plan_dir(p)
     try:
         text = p.read_text(encoding="utf-8")
     except OSError as e:
         raise ContractError(f"cannot read plan {p}: {e}") from e
     return parse_plan_text(text, source=str(p))
+
+
+def load_plan_dir(directory) -> dict:
+    """Exactly one *.json / *.md plan in the directory. Refuse to choose."""
+    root = Path(directory)
+    found = []
+    try:
+        children = sorted(root.iterdir(), key=lambda c: c.name)
+    except OSError as e:
+        raise ContractError(f"cannot read plan directory {root}: {e}") from e
+    for child in children:
+        if not child.is_file() or child.suffix.lower() not in _PLAN_SUFFIXES:
+            continue
+        try:
+            text = child.read_text(encoding="utf-8")
+        except OSError as e:
+            raise ContractError(f"cannot read plan {child}: {e}") from e
+        try:
+            found.append((child.name, parse_plan_text(text, source=str(child))))
+        except ContractError:
+            continue
+    if not found:
+        raise ContractError(
+            f"{root}: no {PLAN_SCHEMA} plan among *.json/*.md"
+        )
+    if len(found) > 1:
+        names = ", ".join(name for name, _ in found)
+        raise ContractError(
+            f"{root}: multiple plans ({names}); refuse to choose"
+        )
+    return found[0][1]
 
 
 def _auth(item) -> dict:
