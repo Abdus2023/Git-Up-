@@ -2,7 +2,7 @@
 
 This tree is the **Specification Freeze v0.1**.
 
-Nothing in this tree authorizes product implementation. It freezes identity, scope, models, invariants, and the ADR process so later implementation cannot smuggle in Red/Cognition assumptions.
+Specification Freeze v0.1 remains the identity/invariant baseline. [Implementation Freeze v0.2](IMPLEMENTATION-FREEZE.md) authorizes the host `git-up` implementation.
 
 ## Start here
 

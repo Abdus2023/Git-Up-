@@ -24,10 +24,6 @@ Contract, repository identity, task, dependency, classification, contract identi
 4. Dry-run creates no identity file and takes no lease.
 5. Independent terminology and `.git-up/` control directory.
 
-## Next authorized step (not this freeze)
+## Next step (completed by Implementation Freeze v0.2)
 
-An implementation freeze that:
-
-- chooses a crate cut against A–M,
-- discharges spec 18 test obligations,
-- implements `git-up` against specs 05–17.
+See [IMPLEMENTATION-FREEZE.md](IMPLEMENTATION-FREEZE.md). v0.2 authorizes the A–M crate cut and a conforming host implementation.

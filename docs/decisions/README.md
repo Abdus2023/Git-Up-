@@ -24,3 +24,5 @@ Context → Decision → Consequences → Notes (optional).
 | [0007](ADR-0007-dry-run.md) | accepted | Dry-run mute guarantee |
 | [0008](ADR-0008-implementation-posture.md) | accepted | Spec first; no crate proliferation |
 | [0009](ADR-0009-prior-art-reference.md) | accepted | Prior art under reference/ |
+| [0010](ADR-0010-implementation-freeze.md) | accepted | Implementation Freeze v0.2 |
+| [0011](ADR-0011-exact-allowlist.md) | accepted | Exact allowlist match |

@@ -18,6 +18,8 @@ Canonical process and list: [../decisions/README.md](../decisions/README.md).
 | [0007](../decisions/ADR-0007-dry-run.md) | Dry-run is first-class and mute |
 | [0008](../decisions/ADR-0008-implementation-posture.md) | Spec first; Rust intent; no crate cut yet |
 | [0009](../decisions/ADR-0009-prior-art-reference.md) | Prior-art Python lives under reference/ only |
+| [0010](../decisions/ADR-0010-implementation-freeze.md) | Implementation Freeze v0.2 |
+| [0011](../decisions/ADR-0011-exact-allowlist.md) | Exact allowlist match |
 
 ## Rules
 

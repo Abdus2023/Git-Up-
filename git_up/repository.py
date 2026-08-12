@@ -1,0 +1,107 @@
+"""Repository identity and observation (component B, H)."""
+
+from __future__ import annotations
+
+import subprocess
+import uuid
+from pathlib import Path
+from typing import Optional
+
+from .canonical import sha256_file
+from .errors import RepositoryError
+
+IDENTITY_REL = Path(".git-up") / "repo.identity"
+
+
+def git_toplevel(start: Optional[Path] = None) -> Path:
+    cwd = Path(start or Path.cwd())
+    try:
+        out = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            cwd=str(cwd), capture_output=True, text=True, timeout=10,
+        )
+        if out.returncode == 0 and out.stdout.strip():
+            return Path(out.stdout.strip()).resolve()
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+    return cwd.resolve()
+
+
+def repo_head(repo_root) -> str:
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(repo_root), "rev-parse", "HEAD"],
+            capture_output=True, text=True, timeout=10,
+        )
+        if out.returncode == 0:
+            return out.stdout.strip()
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+    return ""
+
+
+def porcelain(repo_root) -> set:
+    """Best-effort set of dirty / untracked paths."""
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(repo_root), "status", "--porcelain"],
+            capture_output=True, text=True, timeout=15,
+        )
+        if out.returncode != 0:
+            return set()
+    except (OSError, subprocess.TimeoutExpired):
+        return set()
+    paths = set()
+    for line in out.stdout.splitlines():
+        if len(line) > 3:
+            paths.add(line[3:].strip().strip('"'))
+    return paths
+
+
+def read_repo_identity(repo_root) -> str:
+    """Read existing identity. Does not create (dry-run safe)."""
+    p = Path(repo_root).resolve() / IDENTITY_REL
+    if p.is_file():
+        ident = p.read_text(encoding="utf-8").strip()
+        if ident:
+            return ident
+    return ""
+
+
+def ensure_repo_identity(repo_root) -> str:
+    """Create per-worktree identity. Mutating operations only."""
+    existing = read_repo_identity(repo_root)
+    if existing:
+        return existing
+    root = Path(repo_root).resolve()
+    iddir = root / ".git-up"
+    idfile = iddir / "repo.identity"
+    try:
+        iddir.mkdir(parents=True, exist_ok=True)
+        ident = "repo-" + uuid.uuid4().hex
+        idfile.write_text(ident, encoding="utf-8")
+        return ident
+    except OSError as e:
+        raise RepositoryError(f"cannot create repository identity: {e}") from e
+
+
+def target_hashes(targets, repo_root) -> dict:
+    """Observed state map: None | sha256 | link:sha256 | link:broken."""
+    repo = Path(repo_root).resolve()
+    out = {}
+    for t in targets or []:
+        key = str(t)
+        p = repo / key
+        if not p.exists() and not p.is_symlink():
+            out[key] = None
+        elif p.is_symlink():
+            try:
+                out[key] = "link:" + sha256_file(p.resolve(strict=False))
+            except OSError:
+                out[key] = "link:broken"
+        else:
+            try:
+                out[key] = sha256_file(p)
+            except OSError:
+                out[key] = None
+    return out

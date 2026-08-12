@@ -5,41 +5,15 @@
 It does not decide what should be built. It verifies that an explicitly declared implementation contract was executed correctly.
 
 ```
-Any Source
-   │
-   ├── RFC
-   ├── specification
-   ├── issue
-   ├── design document
-   ├── AI-generated plan
-   └── human implementation plan
-          │
-          ▼
-   Git-Up! Contract
-          │
-          ▼
-   Git-Up! Controller
-          │
-          ▼
-   Git repository
+Any Source → Git-Up! Contract → Git-Up! Controller → Git repository
 ```
 
 ## Status
 
-**Specification Freeze v0.1** is in force.
-
-Do not implement crates, CLI commands, or runtime behavior until a later freeze authorizes it. The canonical documents live under [`docs/`](docs/README.md).
-
-| Document | Role |
+| Freeze | Role |
 |---|---|
-| [Architecture Freeze v0.1](docs/ARCHITECTURE.md) | Two planes, lifecycle, independence |
-| [Specification v0.1](docs/specification/README.md) | Charter through ADR index (01–20) |
-| [ADR index](docs/decisions/README.md) | Binding design decisions |
-| [Prior-art note](reference/red-cognition-controller/README.md) | Extracted principles only |
-
-## Core identity
-
-Git-Up! sits **above Git**. Git is the version-control system. Git-Up! is the implementation-control system.
+| [Specification v0.1](docs/specification/README.md) | Identity, models, invariants |
+| [Implementation v0.2](docs/IMPLEMENTATION-FREEZE.md) | Crate cut + conforming `git-up` |
 
 ```
 Contract     = WHAT MAY BE DONE
@@ -47,70 +21,42 @@ Execution    = WHAT WAS DONE
 Evidence     = WHAT CAN BE PROVEN
 ```
 
-These three are never merged. A successful command is never sufficient for `PASS`. A report can describe authority; it cannot become authority.
+A successful command is never sufficient for `PASS`.
 
-```
-source > contract > execution observation > evidence interpretation > report
-```
+## Quick start
 
-## Lifecycle
-
-```
-AUTHORITATIVE INPUTS
-        ↓
-RECONSTRUCTION          ← adapters (not core)
-        ↓
-REQUIREMENTS
-        ↓
-IMPLEMENTATION CONTRACT
-        ↓
-GIT-UP!
-        ↓
-LOCK                    ← first for every non-dry-run operation
-        ↓
-CLASSIFY
-        ↓
-EXECUTE
-        ↓
-OBSERVE
-        ↓
-VERIFY
-        ↓
-EVIDENCE
-        ↓
-RECONCILE
-        ↓
-PASS / FAIL / BLOCKED
+```bash
+python3 ./git-up --contract examples/contracts/example.json classify
+python3 ./git-up --contract examples/contracts/example.json run --dry-run
+python3 -m unittest discover -s tests -p 'test_*.py'
 ```
 
-Stages 1–4 (input, reconstruction, requirements, contract production) are **adapters**. Git-Up! core begins at a declared contract.
-
-## Independence
-
-Git-Up! does **not** depend on Red/Cognition RFCs, terminology, repository layout, or runtime. Red/Cognition may later become one possible upstream contract producer. The Python controller under `reference/red-cognition-controller/` is prior art for audit, not product code.
-
-## Planned CLI (not implemented in v0.1)
-
-```
-git-up inspect
-git-up reconstruct
-git-up contract validate
-git-up plan
-git-up classify
-git-up ready
-git-up run
-git-up verify
-git-up evidence
-git-up status
-git-up recover
-git-up audit
-git-up trace
-```
-
-`git-up run --dry-run` is a first-class mode with a hard guarantee:
+`git-up run --dry-run` is mute:
 
 ```
 NO LOCK · NO EXECUTION · NO MUTATION · NO EVIDENCE · NO CHECKPOINT
+```
+
+Mutating commands acquire the exclusive lease **first**, then reconstruct, classify, execute, observe, record, and checkpoint.
+
+## Layout
+
+```
+git-up              CLI driver
+git_up/             host implementation (A–M module map)
+tests/              spec 18 invariant suites
+docs/               frozen specification + ADRs
+examples/contracts/ sample contract
+reference/          prior-art audit material only
+```
+
+The intended native crate cut is documented in the implementation freeze. v0.2 is a Python 3 stdlib host implementation because a Rust toolchain cannot be fetched in this environment. It is **not** a port of `reference/red-cognition-controller/`.
+
+## CLI
+
+```
+git-up inspect | reconstruct | contract validate | plan | classify | ready
+git-up run [--dry-run] | verify | evidence | status | recover | audit | trace
 ```
 
 ## License
