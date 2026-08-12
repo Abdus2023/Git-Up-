@@ -1,4 +1,4 @@
-# Conformance audit — Specification v0.1 × host v0.5
+# Conformance audit — Specification v0.1 × host 1.0.1
 
 **Status:** derived (not authority)  
 **Date:** 2026-08-12

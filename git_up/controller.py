@@ -19,7 +19,7 @@ from .classify import classify_all
 from .contract import load_contract, validate_confinement
 from .errors import ContractError, LockAcquisitionError
 from .evidence import EvidenceLog
-from .execute import effective_allowlist, run_validation
+from .execute import contract_tool_set, effective_allowlist, run_validation
 from .identity import contract_identity_for, provenance_context
 from .lock import FileLock
 from .model import TaskState
@@ -50,7 +50,8 @@ class Controller:
         self.state_path = Path(state_path)
         self.evidence_path = Path(evidence_path)
         self.lock_path = Path(state_path).with_name("controller.lock")
-        self.execute_allow = list(execute_allow or [])
+        # None = no CLI refinement. A list (even empty) is an explicit intersect.
+        self.execute_allow = None if execute_allow is None else list(execute_allow)
         self.store = StateStore(self.state_path)
         self.log = EvidenceLog(self.evidence_path)
         self.contract = None
@@ -141,6 +142,11 @@ class Controller:
                 for tid in task.required_tools
             ],
             "allowed_tools": list(task.allowed_tools),
+            "contract_tool_set": contract_tool_set(task),
+            "cli_allow_tool": (
+                list(self.execute_allow) if self.execute_allow is not None else None
+            ),
+            "effective_allowlist": effective_allowlist(task, self.execute_allow),
             "validation_commands": [
                 {"id": v.id, "command": v.command,
                  "expected_exit": v.expected_exit, "purpose": v.purpose}
@@ -246,6 +252,42 @@ class Controller:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
 
+    def _authorizing_evidence_id(self, task_id: str, task, auth) -> str:
+        if task is None:
+            return ""
+        cid = contract_identity_for(task, auth, self.ctx)
+        last = ""
+        for rec in self.log.verified_records():
+            if (
+                rec.get("task_id") == task_id
+                and rec.get("contract_id") == cid
+                and EvidenceLog.is_structural_pass(rec)
+            ):
+                last = rec.get("evidence_id") or ""
+        return last
+
+    def _reconcile_runtime(self, auth) -> list:
+        """Spec 14: persist reconstructed PASS via VALIDATING; clear crashed runtime."""
+        notes = []
+        by_id = self.contract.task_by_id()
+        for tid in sorted(auth):
+            st = self.store.get(tid)
+            if st.state == TaskState.PASS.value and st.validated_pass:
+                continue
+            eid = self._authorizing_evidence_id(tid, by_id.get(tid), auth)
+            self.store.record_reconstructed_pass(tid, eid)
+            notes.append(f"reconstructed PASS via VALIDATING for {tid}")
+        for tid, st in list(self.store.tasks.items()):
+            if tid in auth:
+                continue
+            if st.in_progress or st.state in (
+                TaskState.IN_PROGRESS.value,
+                TaskState.VALIDATING.value,
+            ):
+                self.store.clear_crashed_runtime(tid)
+                notes.append(f"cleared crashed runtime state for {tid}")
+        return notes
+
     def recover(self) -> ControllerResult:
         return self.run(dry_run=False, execute=False)
 
@@ -324,6 +366,8 @@ class Controller:
                 drift_notes.append(
                     f"demoted checkpoint PASS lacking evidence: {demoted}"
                 )
+            for note in self._reconcile_runtime(auth):
+                drift_notes.append(note)
             head = repo_head(self.repo_root)
             if self.store.repo_head and self.store.repo_head != head:
                 drift_notes.append(

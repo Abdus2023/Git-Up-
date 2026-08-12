@@ -74,10 +74,21 @@ def run_validation(task_id, vc, allow, contract_id, ctx, cwd, timeout) -> Eviden
     )
 
 
+def contract_tool_set(task) -> list:
+    """Authorized bare names: allowed ∪ required, first-seen order."""
+    return list(dict.fromkeys(list(task.allowed_tools) + list(task.required_tools)))
+
+
 def effective_allowlist(task, cli_allow) -> list:
-    """Contract tools only. CLI may refine (intersect), never widen (spec 09 §5)."""
-    contract_tools = list(dict.fromkeys(list(task.allowed_tools) + list(task.required_tools)))
-    if not cli_allow:
+    """Contract tools only. CLI may refine (intersect), never widen (spec 09 §5).
+
+    ``cli_allow is None`` means no CLI refinement (use the contract set).
+    A provided list is intersected with the contract set. An empty
+    intersection is an empty allowlist (deny all) — never a silent
+    fallback to the full contract set.
+    """
+    contract_tools = contract_tool_set(task)
+    if cli_allow is None:
         return contract_tools
-    extra = [t for t in cli_allow if t in contract_tools]
-    return extra if extra else contract_tools
+    allowed = set(contract_tools)
+    return [t for t in cli_allow if t in allowed]

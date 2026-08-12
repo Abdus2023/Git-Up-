@@ -2,6 +2,17 @@
 
 Derived history. Not authority.
 
+## 1.0.1 — 2026-08-12
+
+- Spec 10/16: reject `&` with the other shell metacharacters
+- Spec 09: `--allow-tool` is recorded; empty intersection denies (no fallback)
+- Spec 14: recover writes reconstructed PASS only via VALIDATING
+- Spec 08: REJECTED/DEFERRED outrank reconstructed PASS
+- Spec 05: empty tool set + commands is INSUFFICIENT_TASK_DEFINITION
+- Structural PASS required for skip and criterion attestation
+- Relative `--contract` resolves under the repo root
+- `inspect` / `contract validate` report `document_identity`
+
 ## 1.0.0 — 2026-08-12
 
 - Host Implementation 1.0 of Specification v0.1 (ADR-0021)

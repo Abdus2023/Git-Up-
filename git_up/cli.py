@@ -12,6 +12,7 @@ from .authorize import predicate_report
 from .contract import load_contract, validate_confinement
 from .controller import Controller
 from .errors import ContractError, GitUpError
+from .identity import source_identity
 from .model import ALLOWED_TRANSITIONS, TaskState
 from .repository import git_toplevel, porcelain, read_repo_identity, repo_head
 
@@ -99,7 +100,7 @@ def _resolve_under_repo(repo: Path, p) -> Path:
 def _controller(args) -> Controller:
     repo = Path(args.repo_root or git_toplevel()).resolve()
     return Controller(
-        contract_path=args.contract,
+        contract_path=str(_resolve_under_repo(repo, args.contract)),
         repo_root=str(repo),
         state_path=str(_resolve_under_repo(repo, args.state)),
         evidence_path=str(_resolve_under_repo(repo, args.evidence)),
@@ -341,16 +342,17 @@ def main(argv=None) -> int:
             return _emit(args, payload, 0)
 
         if cmd == "contract-validate":
-            repo = args.repo_root or str(git_toplevel())
-            contract = load_contract(args.contract)
+            repo = Path(args.repo_root or git_toplevel()).resolve()
+            cpath = _resolve_under_repo(repo, args.contract)
+            contract = load_contract(cpath)
             confine = validate_confinement(contract, repo)
             insufficient = []
             if getattr(args, "strict", False):
                 ctrl = Controller(
-                    contract_path=args.contract,
-                    repo_root=repo,
-                    state_path=str(Path(repo) / ".git-up" / "state.json"),
-                    evidence_path=str(Path(repo) / ".git-up" / "evidence.jsonl"),
+                    contract_path=str(cpath),
+                    repo_root=str(repo),
+                    state_path=str(repo / ".git-up" / "state.json"),
+                    evidence_path=str(repo / ".git-up" / "evidence.jsonl"),
                 )
                 res = ctrl.run(dry_run=True, execute=False)
                 for c in res.report.get("classifications") or []:
@@ -363,7 +365,8 @@ def main(argv=None) -> int:
                 mode="dry-run",
                 advisory=True,
                 frontier="PAUSED",
-                contract=str(Path(args.contract).resolve()),
+                contract=str(Path(cpath).resolve()),
+                document_identity=source_identity(contract),
                 schema_version_contract=contract.schema_version,
                 task_count=len(contract.tasks),
                 confinement_errors=confine,
@@ -407,7 +410,10 @@ def main(argv=None) -> int:
             mode="dry-run",
             advisory=True,
             frontier=res.frontier,
-            contract=str(Path(args.contract).resolve()),
+            contract=str(Path(ctrl.contract_path).resolve()),
+            document_identity=(
+                source_identity(ctrl.contract) if ctrl.contract else ""
+            ),
             schema_version_contract=getattr(ctrl.contract, "schema_version", ""),
             task_ids=[t.id for t in (ctrl.contract.tasks if ctrl.contract else [])],
             repository_identity=read_repo_identity(repo),

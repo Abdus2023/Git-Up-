@@ -8,7 +8,8 @@ from pathlib import Path
 
 from .errors import SafetyError
 
-_COMMAND_REJECT = set(";<|>`$\\")
+# spec 10 §2 / spec 16 §3: ; & | > < ` $ \ and ASCII controls.
+_COMMAND_REJECT = set(";|&><`$\\")
 _DENIED_EXE = {
     "sh", "bash", "dash", "zsh", "ksh", "csh", "tcsh", "ash", "busybox", "fish",
 }

@@ -3,9 +3,9 @@
 **Declared:** 2026-08-12  
 **Status:** IN FORCE  
 **Implements:** [Specification Freeze v0.1](specification/README.md)  
-**ADR:** [ADR-0021](decisions/ADR-0021-host-1.0.md)
+**ADR:** [ADR-0021](decisions/ADR-0021-host-1.0.md), [ADR-0022](decisions/ADR-0022-host-1.0.1.md)
 
-This is version **1.0.0** of the **host** implementation (Python 3.11 stdlib). It is not a Rust native port and not a Red/Cognition runtime.
+This is version **1.0.1** of the **host** implementation (Python 3.11 stdlib). It is not a Rust native port and not a Red/Cognition runtime. 1.0.1 is a compatible conformance patch of 1.0.0 (Specification v0.1 unchanged).
 
 ## What 1.0 is
 
@@ -42,3 +42,7 @@ python3 ./git-up contract validate --strict
 ```
 
 `contract diff` of the committed file vs a fresh emit must report `identical: true`.
+
+## 1.0.1 patch
+
+See [ADR-0022](decisions/ADR-0022-host-1.0.1.md). No new CLI verbs. No spec bump.

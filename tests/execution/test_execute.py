@@ -57,6 +57,38 @@ class ExecutionTests(unittest.TestCase):
             self.assertTrue(res.new_evidence)
             self.assertEqual(res.new_evidence[0]["failure_class"], "INTEGRATION")
 
+    def test_empty_cli_allow_intersect_denies(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = init_repo(Path(td))
+            seed_worktree(repo)
+            res = make_controller(repo, execute_allow=["not-a-contract-tool"]).run(
+                dry_run=False, execute=True
+            )
+            self.assertEqual(res.result, "FAIL")
+            states = {c["task_id"]: c["effective_state"]
+                      for c in res.report["classifications"]}
+            self.assertNotEqual(states.get("T1"), "PASS")
+            self.assertTrue(res.new_evidence)
+            self.assertEqual(res.new_evidence[0]["result"], "BLOCKED")
+
+    def test_execution_contract_records_allowlist(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = init_repo(Path(td))
+            seed_worktree(repo)
+            res = make_controller(repo).run(dry_run=True, execute=False)
+            self.assertTrue(res.contracts)
+            ec = res.contracts[0]
+            self.assertEqual(ec.get("effective_allowlist"), ["python3"])
+            self.assertIsNone(ec.get("cli_allow_tool"))
+            self.assertEqual(ec.get("contract_tool_set"), ["python3"])
+            refined = make_controller(repo, execute_allow=["python3"]).run(
+                dry_run=True, execute=False
+            )
+            self.assertEqual(refined.contracts[0].get("cli_allow_tool"), ["python3"])
+            self.assertEqual(
+                refined.contracts[0].get("effective_allowlist"), ["python3"]
+            )
+
     def test_I_REC_2_no_reexec(self):
         with tempfile.TemporaryDirectory() as td:
             repo = init_repo(Path(td))

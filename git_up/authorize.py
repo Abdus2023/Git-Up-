@@ -18,7 +18,7 @@ def criterion_attestations(task, contract_id: str, task_evidence: list) -> list:
         e.get("command_id") for e in task_evidence
         if e.get("contract_id") == contract_id
         and e.get("task_id") == task.id
-        and e.get("result") == "PASS"
+        and EvidenceLog.is_structural_pass(e)
     }
     out = []
     for c in task.acceptance_criteria:
@@ -68,7 +68,7 @@ def closure_gaps(task, contract_id: str, task_evidence: list, ctx: dict) -> list
             e.get("command_id") for e in task_evidence
             if e.get("contract_id") == contract_id
             and e.get("task_id") == task.id
-            and e.get("result") == "PASS"
+            and EvidenceLog.is_structural_pass(e)
         }
         for vc in task.validation_commands:
             if command_identity(vc) not in pass_cmd_ids:
@@ -94,6 +94,8 @@ def expected_outputs_hold(task, repo_root) -> bool:
 
 def task_may_pass(task, contract_id, evs, auth, ctx, repo_root) -> bool:
     """Authorization predicate minus predecessor-state (that's the store's job)."""
+    if task.rejected or task.deferred:
+        return False
     if not (task.acceptance_criteria and task.validation_commands):
         return False
     if authority_missing(task, repo_root):

@@ -183,5 +183,5 @@ class EvidenceLog:
             for r in self.verified_records()
             if r.get("task_id") == task_id
             and r.get("contract_id") == contract_id
-            and r.get("result") == "PASS"
+            and self.is_structural_pass(r)
         }

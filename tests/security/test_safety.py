@@ -30,6 +30,13 @@ class SafetyTests(unittest.TestCase):
         toks = validate_command("python3 -c pass", allow=["python3"])
         self.assertEqual(toks[0], "python3")
 
+    def test_shell_metacharacters_rejected(self):
+        # spec 10 §2 / spec 16 §3 — including ampersand (was missing in 1.0.0).
+        for ch in ";|&><`$\\":
+            with self.subTest(ch=ch):
+                with self.assertRaises(SafetyError):
+                    validate_command(f"python3 -c {ch}", allow=["python3"])
+
     def test_git_target_rejected(self):
         with tempfile.TemporaryDirectory() as td:
             v = validate_targets([".git/config"], td)

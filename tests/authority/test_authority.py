@@ -29,6 +29,30 @@ class AuthorityTests(unittest.TestCase):
                 states["T1"]["blocker_class"], "INSUFFICIENT_TASK_DEFINITION"
             )
 
+    def test_empty_tool_set_is_insufficient(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = init_repo(Path(td))
+            task = minimal_task(allowed_tools=[], required_tools=[])
+            seed_worktree(repo, contract_doc([task]))
+            res = make_controller(repo).run(dry_run=True)
+            states = {c["task_id"]: c for c in res.report["classifications"]}
+            self.assertEqual(states["T1"]["effective_state"], "BLOCKED")
+            self.assertEqual(
+                states["T1"]["blocker_class"], "INSUFFICIENT_TASK_DEFINITION"
+            )
+
+    def test_rejected_outranks_reconstructed_pass(self):
+        from git_up.classify import classify_all
+        from git_up.contract import load_contract
+
+        with tempfile.TemporaryDirectory() as td:
+            repo = init_repo(Path(td))
+            task = minimal_task(rejected=True)
+            seed_worktree(repo, contract_doc([task]))
+            contract = load_contract(repo / "git-up.contract.json")
+            out = classify_all(contract.tasks, contract.tool_map(), repo, {"T1"})
+            self.assertEqual(out["T1"].effective_state, "REJECTED")
+
     def test_I_PASS_5_dependency_fixpoint(self):
         with tempfile.TemporaryDirectory() as td:
             repo = init_repo(Path(td))

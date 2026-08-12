@@ -42,6 +42,7 @@ See `examples/contracts/example.json` and spec 05. Minimum for `READY`:
 
 ```bash
 python3 ./git-up --contract path/to/contract.json inspect
+# inspect / contract validate report document_identity (advisory)
 python3 ./git-up --contract path/to/contract.json contract validate
 python3 ./git-up --contract path/to/contract.json plan
 python3 ./git-up --contract path/to/contract.json run --dry-run

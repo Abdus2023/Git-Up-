@@ -92,6 +92,12 @@ def self_blockers(task: Task, tools: dict, repo_root: Path):
     if not task.validation_commands:
         reasons.append(BlockerCategory.INSUFFICIENT_TASK_DEFINITION.value)
         detail.append("no validation_commands — acceptance is not executable")
+    elif not (task.allowed_tools or task.required_tools):
+        reasons.append(BlockerCategory.INSUFFICIENT_TASK_DEFINITION.value)
+        detail.append(
+            "validation_commands present but allowed_tools and required_tools "
+            "are empty — no tool is authorized"
+        )
     if not task.acceptance_criteria:
         reasons.append(BlockerCategory.INSUFFICIENT_TASK_DEFINITION.value)
         detail.append("no acceptance_criteria — success is undefined")
@@ -170,7 +176,16 @@ def classify_all(tasks, tools: dict, repo_root, validated_pass=None) -> dict:
         satisfied = set(validated_pass)
         new = {}
         for t in tasks:
-            if t.id in validated_pass:
+            # Contract terminal flags outrank reconstructed PASS (spec 08 §5).
+            if t.rejected:
+                cls = Classification(
+                    task_id=t.id, effective_state=TaskState.REJECTED.value
+                )
+            elif t.deferred:
+                cls = Classification(
+                    task_id=t.id, effective_state=TaskState.DEFERRED.value
+                )
+            elif t.id in validated_pass:
                 cls = Classification(
                     task_id=t.id, effective_state=TaskState.PASS.value, ready=False
                 )

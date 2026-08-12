@@ -22,3 +22,6 @@ Charter invariants (spec 01 §8) plus operational MUST IDs from spec 18.
 | T3 | Ledger is recomputed, never read as input | 15 | I-LEDGER-1 |
 | I-TIMEOUT | Timeout is FAIL, not PASS | 10 | `tests/execution/test_timeout.py` |
 | I-SYMLINK | Symlink escape fail-closed | 16 | `tests/security/test_symlink.py` |
+| I-SAFE-2 | `&` and the spec 16 metacharacter set | 10, 16 | `test_shell_metacharacters_rejected` |
+| I-ALLOW-1 | CLI allow-tool refine-only; empty ∩ denies | 09 §5 | `test_empty_cli_allow_intersect_denies` |
+| I-REC-3 | Reconstruct PASS only via VALIDATING | 14 | `test_reconstructed_pass_via_validating` |

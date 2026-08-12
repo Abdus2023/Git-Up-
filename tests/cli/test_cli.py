@@ -46,6 +46,7 @@ class CliTests(unittest.TestCase):
             self.assertTrue(data.get("advisory"))
             self.assertIn("T1", data.get("task_ids") or [])
             self.assertEqual(data.get("repository_identity"), "")
+            self.assertTrue(data.get("document_identity"))
             code, plan = _run(["--contract", c, "--repo-root", str(repo), "plan"])
             self.assertEqual(code, 0, plan)
             self.assertEqual(plan.get("mode"), "plan")

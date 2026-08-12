@@ -162,3 +162,43 @@ class StateStore:
                 st.updated_at = _now()
                 demoted.append(tid)
         return demoted
+
+    def record_reconstructed_pass(self, task_id: str, evidence_id: str) -> None:
+        """Write PASS only through VALIDATING (spec 08 S1, spec 14 crash world).
+
+        Reconstruction is not a shortcut: READY/IN_PROGRESS/FAIL never jump
+        to PASS. Attempts are not incremented (this is not a new execution).
+        """
+        s = self.get(task_id)
+        if s.state == TaskState.PASS.value and s.validated_pass:
+            if evidence_id and evidence_id not in s.evidence_refs:
+                s.evidence_refs.append(evidence_id)
+            return
+        if s.state == TaskState.PASS.value and not s.validated_pass:
+            s.state = TaskState.DISCOVERED.value
+            s.validated_pass = False
+            s.in_progress = False
+        if s.state in (
+            TaskState.DISCOVERED.value,
+            TaskState.FAIL.value,
+            TaskState.BLOCKED.value,
+        ):
+            self.transition(task_id, TaskState.READY.value)
+        if s.state == TaskState.READY.value:
+            self.transition(task_id, TaskState.IN_PROGRESS.value)
+        if s.state == TaskState.IN_PROGRESS.value:
+            self.transition(task_id, TaskState.VALIDATING.value)
+            self.get(task_id).in_progress = False
+        self.finish_pass(task_id, evidence_id)
+
+    def clear_crashed_runtime(self, task_id: str) -> None:
+        """Demote a crashed IN_PROGRESS/VALIDATING that is not authoritative.
+
+        Reconstruction may write DISCOVERED directly (same posture as
+        demote_unbacked_pass). Classification then recomputes READY/BLOCKED.
+        """
+        s = self.get(task_id)
+        s.state = TaskState.DISCOVERED.value
+        s.in_progress = False
+        s.validated_pass = False
+        s.updated_at = _now()
