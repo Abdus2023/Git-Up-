@@ -1,9 +1,9 @@
-# Git-Up! Implementation Freeze v0.10
+# Git-Up! Implementation Freeze v0.11
 
 **Declared:** 2026-08-12  
-**Status:** IN FORCE (supersedes v0.9 host surface)  
+**Status:** IN FORCE (supersedes v0.10 host surface)  
 **Depends on:** Specification Freeze v0.1  
-**ADR:** [ADR-0010](decisions/ADR-0010-implementation-freeze.md) … [ADR-0019](decisions/ADR-0019-contract-diff.md)
+**ADR:** [ADR-0010](decisions/ADR-0010-implementation-freeze.md) … [ADR-0020](decisions/ADR-0020-self-plan-and-strict-validate.md)
 
 This freeze **authorizes implementation** of Git-Up! against specs 05–18.
 
@@ -50,7 +50,12 @@ Especially:
 
 `python3 -m unittest discover -s tests -p 'test_*.py'` — spec 18 IDs plus v0.3 CLI/truncation/report-lease tests.
 
-## 6. v0.10 additions
+## 6. v0.11 additions
+
+- `docs/plans/self.md` → emitted `git-up.contract.json` (adapter dogfood)
+- `git-up contract validate --strict`
+
+## 6u. v0.10 additions
 
 - `git-up contract diff A B` — document/plan/task identity delta (not “better”)
 - [CHANGELOG.md](../CHANGELOG.md) (derived)

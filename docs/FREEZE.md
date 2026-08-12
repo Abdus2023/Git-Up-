@@ -26,4 +26,4 @@ Contract, repository identity, task, dependency, classification, contract identi
 
 ## Next step (completed by Implementation Freeze v0.2)
 
-See [IMPLEMENTATION-FREEZE.md](IMPLEMENTATION-FREEZE.md). v0.10 adds `contract diff` and a derived changelog.
+See [IMPLEMENTATION-FREEZE.md](IMPLEMENTATION-FREEZE.md). v0.11 dogfoods the self-plan and adds `validate --strict`.

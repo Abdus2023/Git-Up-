@@ -11,17 +11,23 @@
       "id": "python3",
       "available": true,
       "binary": "python3",
-      "version": "3"
+      "version": "3",
+      "evidence": "",
+      "detail": ""
     }
   ],
   "requirements": [
     {
       "id": "R-SPEC18",
-      "specification_refs": ["docs/specification/18-test-strategy.md"],
+      "specification_refs": [
+        "docs/specification/18-test-strategy.md"
+      ],
       "coverage": [
         {
           "task_id": "T-SPEC18",
-          "obligations": ["discharge-invariant-ids"]
+          "obligations": [
+            "discharge-invariant-ids"
+          ]
         }
       ]
     }
@@ -31,6 +37,7 @@
       "id": "T-SPEC18",
       "title": "Discharge Specification 18 invariant tests",
       "description": "The host implementation satisfies every MUST ID in spec 18.",
+      "scope": "",
       "priority": 10,
       "order": 0,
       "source_authority": [
@@ -40,18 +47,29 @@
           "requirement_id": "R-SPEC18"
         }
       ],
-      "requirement_refs": ["R-SPEC18"],
+      "requirement_refs": [
+        "R-SPEC18"
+      ],
       "specification_refs": [
         {
           "path": "docs/specification/18-test-strategy.md",
-          "anchor": "3"
+          "anchor": "3",
+          "requirement_id": ""
         }
       ],
-      "implementation_targets": ["git_up", "tests", "git-up"],
+      "implementation_targets": [
+        "git_up",
+        "tests",
+        "git-up"
+      ],
       "prohibited_scope": [],
       "dependencies": [],
-      "required_tools": ["python3"],
-      "allowed_tools": ["python3"],
+      "required_tools": [
+        "python3"
+      ],
+      "allowed_tools": [
+        "python3"
+      ],
       "validation_commands": [
         {
           "id": "v-unittest",
@@ -74,5 +92,10 @@
       "rejected": false,
       "deferred": false
     }
-  ]
+  ],
+  "provenance": {
+    "producer": "git-up.adapter.plan",
+    "source_identity": "9e2acc92b297911f8b2fc02538a94cece3c0f6c7a9d5161a21122e5e96bb844f",
+    "parent_contracts": []
+  }
 }

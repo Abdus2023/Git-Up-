@@ -65,7 +65,14 @@ python3 ./git-up --contract path/to/contract.json recover
 
 ## 4. This repository
 
-`git-up.contract.json` at the root is a **self-contract**: its validator is the spec 18 unit suite. `git-up classify` should report that task `READY` (or `PASS` after a successful `run`).
+`git-up.contract.json` is **emitted** from [`docs/plans/self.md`](plans/self.md):
+
+```bash
+python3 ./git-up contract emit --from docs/plans/self.md --out git-up.contract.json
+python3 ./git-up contract validate --strict
+```
+
+`git-up classify` should report `T-SPEC18` READY (or PASS after a successful `run`).
 
 Do not invoke `git-up run` on the self-contract from inside those unit tests.
 

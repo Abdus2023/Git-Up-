@@ -53,6 +53,8 @@ def _flag_parser() -> argparse.ArgumentParser:
                    help="contract emit: previous contract for explicit lineage")
     p.add_argument("--check", action="store_true",
                    help="contract emit: confinement-check the result (no execute)")
+    p.add_argument("--strict", action="store_true",
+                   help="contract validate: fail on INSUFFICIENT_TASK_DEFINITION")
     p.add_argument("--a", dest="diff_a", default=None,
                    help="contract diff: left contract")
     p.add_argument("--b", dest="diff_b", default=None,
@@ -342,6 +344,21 @@ def main(argv=None) -> int:
             repo = args.repo_root or str(git_toplevel())
             contract = load_contract(args.contract)
             confine = validate_confinement(contract, repo)
+            insufficient = []
+            if getattr(args, "strict", False):
+                ctrl = Controller(
+                    contract_path=args.contract,
+                    repo_root=repo,
+                    state_path=str(Path(repo) / ".git-up" / "state.json"),
+                    evidence_path=str(Path(repo) / ".git-up" / "evidence.jsonl"),
+                )
+                res = ctrl.run(dry_run=True, execute=False)
+                for c in res.report.get("classifications") or []:
+                    if c.get("blocker_class") == "INSUFFICIENT_TASK_DEFINITION":
+                        insufficient.append(c["task_id"])
+            errors = [f"path confinement: {e}" for e in confine]
+            if insufficient:
+                errors.append("insufficient definition: " + ", ".join(insufficient))
             payload = _envelope(
                 mode="dry-run",
                 advisory=True,
@@ -350,10 +367,11 @@ def main(argv=None) -> int:
                 schema_version_contract=contract.schema_version,
                 task_count=len(contract.tasks),
                 confinement_errors=confine,
-                result="FAIL" if confine else "PASS",
-                errors=[f"path confinement: {e}" for e in confine],
+                insufficient_tasks=insufficient,
+                result="FAIL" if (confine or insufficient) else "PASS",
+                errors=errors,
             )
-            return _emit(args, payload, 2 if confine else 0)
+            return _emit(args, payload, 2 if (confine or insufficient) else 0)
 
         ctrl = _controller(args)
         if cmd == "evidence":

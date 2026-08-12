@@ -2,6 +2,11 @@
 
 Derived history. Not authority.
 
+## 0.11.0 — 2026-08-12
+
+- Self-plan `docs/plans/self.md` is the source of `git-up.contract.json`
+- `contract validate --strict` fails on INSUFFICIENT_TASK_DEFINITION
+
 ## 0.10.0 — 2026-08-12
 
 - `git-up contract diff A B` — identity comparison (ADR-0019)
