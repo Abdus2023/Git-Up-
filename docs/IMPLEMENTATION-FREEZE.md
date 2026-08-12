@@ -1,9 +1,9 @@
-# Git-Up! Implementation Freeze v0.6
+# Git-Up! Implementation Freeze v0.7
 
 **Declared:** 2026-08-12  
-**Status:** IN FORCE (supersedes v0.5 host surface)  
+**Status:** IN FORCE (supersedes v0.6 host surface)  
 **Depends on:** Specification Freeze v0.1  
-**ADR:** [ADR-0010](decisions/ADR-0010-implementation-freeze.md) … [ADR-0015](decisions/ADR-0015-adapter-emit.md)
+**ADR:** [ADR-0010](decisions/ADR-0010-implementation-freeze.md) … [ADR-0016](decisions/ADR-0016-fenced-plan.md)
 
 This freeze **authorizes implementation** of Git-Up! against specs 05–18.
 
@@ -50,7 +50,13 @@ Especially:
 
 `python3 -m unittest discover -s tests -p 'test_*.py'` — spec 18 IDs plus v0.3 CLI/truncation/report-lease tests.
 
-## 6. v0.6 additions
+## 6. v0.7 additions
+
+- Fenced `git-up-plan` blocks in markdown / issues / notes (ADR-0016)
+- `contract emit --from -` (stdin)
+- Multiple fences or prose-only input fail closed
+
+## 6y. v0.6 additions
 
 - Adapter plane: `git_up.adapter` + [docs/adapters/](adapters/README.md)
 - `git-up contract emit --from PLAN [--out CONTRACT]`

@@ -8,6 +8,8 @@ then fail-closes (ADR-0006, ADR-0015).
 from __future__ import annotations
 
 import json
+import re
+import sys
 from pathlib import Path
 
 from . import CONTRACT_SCHEMA
@@ -15,13 +17,18 @@ from .errors import ContractError
 
 PLAN_SCHEMA = "git-up.plan.v0.1"
 
+# Explicit fences only. Prose is never parsed as a plan (ADR-0016).
+_FENCE_GITUP = re.compile(
+    r"```git-up-plan[^\n]*\n(.*?)```",
+    re.DOTALL,
+)
+_FENCE_JSON = re.compile(
+    r"```json[^\n]*\n(.*?)```",
+    re.DOTALL,
+)
 
-def load_plan(path) -> dict:
-    p = Path(path)
-    try:
-        raw = json.loads(p.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as e:
-        raise ContractError(f"cannot load plan {p}: {e}") from e
+
+def _parse_plan_object(raw) -> dict:
     if not isinstance(raw, dict):
         raise ContractError("plan must be a JSON object")
     if raw.get("schema_version") != PLAN_SCHEMA:
@@ -30,6 +37,74 @@ def load_plan(path) -> dict:
             f"expected {PLAN_SCHEMA!r}"
         )
     return raw
+
+
+def parse_plan_text(text: str, *, source: str = "<text>") -> dict:
+    """Load a plan from raw text: whole JSON, or one explicit fence.
+
+    Fail closed if:
+      * more than one ```git-up-plan fence exists
+      * no fence and the file is not a plan JSON object
+      * a json fence exists but is not a git-up.plan.v0.1 object
+    Never extract tasks from headings or prose.
+    """
+    text = text or ""
+    gitup_blocks = _FENCE_GITUP.findall(text)
+    if len(gitup_blocks) > 1:
+        raise ContractError(
+            f"{source}: multiple ```git-up-plan fences; refuse to choose"
+        )
+    if len(gitup_blocks) == 1:
+        try:
+            raw = json.loads(gitup_blocks[0])
+        except json.JSONDecodeError as e:
+            raise ContractError(f"{source}: git-up-plan fence is not JSON: {e}") from e
+        return _parse_plan_object(raw)
+
+    stripped = text.strip()
+    if stripped.startswith("{"):
+        try:
+            raw = json.loads(stripped)
+        except json.JSONDecodeError:
+            raw = None
+        if isinstance(raw, dict) and raw.get("schema_version") == PLAN_SCHEMA:
+            return _parse_plan_object(raw)
+        if isinstance(raw, dict):
+            raise ContractError(
+                f"{source}: JSON is not a {PLAN_SCHEMA} plan"
+            )
+
+    json_blocks = _FENCE_JSON.findall(text)
+    plan_blocks = []
+    for block in json_blocks:
+        try:
+            raw = json.loads(block)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(raw, dict) and raw.get("schema_version") == PLAN_SCHEMA:
+            plan_blocks.append(raw)
+    if len(plan_blocks) > 1:
+        raise ContractError(
+            f"{source}: multiple ```json plan objects; refuse to choose"
+        )
+    if len(plan_blocks) == 1:
+        return _parse_plan_object(plan_blocks[0])
+
+    raise ContractError(
+        f"{source}: no {PLAN_SCHEMA} plan found "
+        "(need a JSON plan file or a single ```git-up-plan fence)"
+    )
+
+
+def load_plan(path) -> dict:
+    if str(path) == "-":
+        return parse_plan_text(sys.stdin.read(), source="<stdin>")
+    p = Path(path)
+    try:
+        text = p.read_text(encoding="utf-8")
+    except OSError as e:
+        raise ContractError(f"cannot read plan {p}: {e}") from e
+    return parse_plan_text(text, source=str(p))
 
 
 def _auth(item) -> dict:

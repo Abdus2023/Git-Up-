@@ -22,6 +22,7 @@ Hand-write JSON, or emit from a plan (adapter; does not invent fields):
 
 ```bash
 python3 ./git-up contract emit --from examples/plans/example.json --out /tmp/emitted.json
+python3 ./git-up contract emit --from examples/plans/example.md --out /tmp/emitted.json
 python3 ./git-up --contract /tmp/emitted.json classify
 ```
 

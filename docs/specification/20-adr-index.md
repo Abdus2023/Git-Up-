@@ -24,6 +24,7 @@ Canonical process and list: [../decisions/README.md](../decisions/README.md).
 | [0013](../decisions/ADR-0013-until-paused-and-residue.md) | run --until-paused + residue |
 | [0014](../decisions/ADR-0014-verify-predicate.md) | verify predicate breakdown |
 | [0015](../decisions/ADR-0015-adapter-emit.md) | Plan adapter + contract emit |
+| [0016](../decisions/ADR-0016-fenced-plan.md) | Fenced plans only; no prose parse |
 
 ## Rules
 

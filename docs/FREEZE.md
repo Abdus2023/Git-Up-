@@ -26,4 +26,4 @@ Contract, repository identity, task, dependency, classification, contract identi
 
 ## Next step (completed by Implementation Freeze v0.2)
 
-See [IMPLEMENTATION-FREEZE.md](IMPLEMENTATION-FREEZE.md). v0.6 adds the plan adapter (`contract emit`) on top of the conforming controller.
+See [IMPLEMENTATION-FREEZE.md](IMPLEMENTATION-FREEZE.md). v0.7 adds fenced-plan extraction (no prose parsing) on top of the plan adapter.

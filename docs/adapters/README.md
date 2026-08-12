@@ -21,8 +21,18 @@ Any Source  →  Adapter  →  Implementation Contract  →  Git-Up! core
 
 `git-up.plan.v0.1` — see `examples/plans/example.json`.
 
+A design note or issue may carry **exactly one** fenced plan. Prose is ignored (ADR-0016):
+
+````markdown
+```git-up-plan
+{ "schema_version": "git-up.plan.v0.1", "tasks": [ ... ] }
+```
+````
+
 ```bash
 python3 ./git-up contract emit --from examples/plans/example.json --out /tmp/c.json
+python3 ./git-up contract emit --from examples/plans/example.md --out /tmp/c.json
+python3 ./git-up contract emit --from - --out /tmp/c.json < examples/plans/example.json
 python3 ./git-up --contract /tmp/c.json classify
 ```
 
