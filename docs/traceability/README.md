@@ -6,4 +6,5 @@ This is Git-Up!'s *own* spec-to-invariant map, not a product requirement ledger 
 |---|---|
 | [spec-to-component.md](spec-to-component.md) | Spec section → component A–M |
 | [invariant-register.md](invariant-register.md) | MUST invariants → test IDs |
+| [conformance.md](conformance.md) | Phase → impl → test → gap audit |
 | [../specification/19-phase-mapping.md](../specification/19-phase-mapping.md) | Historical phases 1–29 |

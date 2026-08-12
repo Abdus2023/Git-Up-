@@ -118,6 +118,52 @@ def task_may_pass(task, contract_id, evs, auth, ctx, repo_root) -> bool:
     return True
 
 
+def explain_task(task, contract_id, evs, auth, ctx, repo_root) -> dict:
+    """Derived breakdown of the authorization predicate. Never authorizes."""
+    missing_auth = authority_missing(task, repo_root)
+    gaps = closure_gaps(task, contract_id, evs, ctx)
+    deps_ok = all(
+        d.ref in auth for d in task.dependencies if d.required_state == "PASS"
+    )
+    outputs_ok = expected_outputs_hold(task, repo_root)
+    targets_ok = True
+    if task.implementation_targets:
+        cur = target_hashes(task.implementation_targets, repo_root)
+        targets_ok = any(
+            e.get("target_hashes") == cur
+            and e.get("contract_id") == contract_id
+            and e.get("result") == "PASS"
+            for e in evs
+        )
+    structural = [
+        e.get("command_id") for e in evs
+        if e.get("contract_id") == contract_id and EvidenceLog.is_structural_pass(e)
+    ]
+    return {
+        "task_id": task.id,
+        "contract_id": contract_id,
+        "would_pass": task_may_pass(task, contract_id, evs, auth, ctx, repo_root),
+        "defined": bool(task.acceptance_criteria and task.validation_commands),
+        "authority_missing": list(missing_auth),
+        "dependencies_satisfied": deps_ok,
+        "closure_gaps": gaps,
+        "expected_outputs_ok": outputs_ok,
+        "target_hashes_ok": targets_ok,
+        "structural_pass_commands": structural,
+    }
+
+
+def predicate_report(contract, log: EvidenceLog, ctx: dict, repo_root) -> list:
+    auth = authoritative_pass(contract, log, ctx, repo_root)
+    trusted = log.verified_records()
+    out = []
+    for task in contract.tasks:
+        evs = [r for r in trusted if r.get("task_id") == task.id]
+        cid = contract_identity_for(task, auth, ctx)
+        out.append(explain_task(task, cid, evs, auth, ctx, repo_root))
+    return out
+
+
 def authoritative_pass(contract, log: EvidenceLog, ctx: dict, repo_root) -> set:
     """Least fixpoint of the authorization predicate over the task graph."""
     by_id = contract.task_by_id()

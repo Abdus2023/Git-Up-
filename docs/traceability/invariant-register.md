@@ -20,3 +20,5 @@ Charter invariants (spec 01 §8) plus operational MUST IDs from spec 18.
 | T1 | Task PASS ⇏ requirement SATISFIED | 15 | I-LEDGER-1 |
 | T2 | Ledger never authorizes task PASS | 15 | I-LEDGER-1 |
 | T3 | Ledger is recomputed, never read as input | 15 | I-LEDGER-1 |
+| I-TIMEOUT | Timeout is FAIL, not PASS | 10 | `tests/execution/test_timeout.py` |
+| I-SYMLINK | Symlink escape fail-closed | 16 | `tests/security/test_symlink.py` |

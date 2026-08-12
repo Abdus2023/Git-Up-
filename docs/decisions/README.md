@@ -28,3 +28,4 @@ Context → Decision → Consequences → Notes (optional).
 | [0011](ADR-0011-exact-allowlist.md) | accepted | Exact allowlist match |
 | [0012](ADR-0012-conformance-v0.3.md) | accepted | Conformance completion v0.3 |
 | [0013](ADR-0013-until-paused-and-residue.md) | accepted | run --until-paused + residue |
+| [0014](ADR-0014-verify-predicate.md) | accepted | verify predicate breakdown |

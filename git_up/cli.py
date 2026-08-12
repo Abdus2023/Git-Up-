@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 from . import REPORT_SCHEMA, __version__
+from .authorize import predicate_report
 from .contract import load_contract, validate_confinement
 from .controller import Controller
 from .errors import ContractError, GitUpError
@@ -368,8 +369,23 @@ def main(argv=None) -> int:
             drift_notes=res.drift_notes, result=res.result, errors=res.errors,
         )
     elif cmd == "verify":
-        out["mode"] = "verify"
-        out["advisory"] = dry_run
+        pass_ids = [
+            c["task_id"] for c in res.report.get("classifications") or []
+            if c.get("effective_state") == "PASS"
+        ]
+        out = _envelope(
+            mode="verify",
+            advisory=dry_run,
+            frontier=res.frontier,
+            authoritative_pass=pass_ids,
+            predicate=predicate_report(
+                ctrl.contract, ctrl.log, ctrl.ctx, repo
+            ),
+            classifications=res.report.get("classifications"),
+            drift_notes=res.drift_notes,
+            result=res.result,
+            errors=res.errors,
+        )
 
     code = res.exit_code
     if code == 0 and out.get("result") == "FAIL":
