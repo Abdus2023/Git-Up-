@@ -1,0 +1,78 @@
+{
+  "schema_version": "git-up.contract.v0.1",
+  "policy": {
+    "determinism": true,
+    "timeout_seconds": 60,
+    "concurrency": "exclusive",
+    "failure_mode": "fail_closed"
+  },
+  "tools": [
+    {
+      "id": "python3",
+      "available": true,
+      "binary": "python3",
+      "version": "3"
+    }
+  ],
+  "requirements": [
+    {
+      "id": "R1",
+      "specification_refs": ["docs/ARCHITECTURE.md"],
+      "coverage": [
+        {
+          "task_id": "T1",
+          "obligations": ["smoke"]
+        }
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Example smoke validation",
+      "description": "A READY task used to exercise git-up run --dry-run.",
+      "priority": 10,
+      "order": 0,
+      "source_authority": [
+        {
+          "path": "docs/ARCHITECTURE.md",
+          "anchor": "R1",
+          "requirement_id": "R1"
+        }
+      ],
+      "requirement_refs": ["R1"],
+      "specification_refs": [
+        {
+          "path": "docs/ARCHITECTURE.md",
+          "anchor": "R1"
+        }
+      ],
+      "implementation_targets": ["README.md"],
+      "prohibited_scope": [],
+      "dependencies": [],
+      "required_tools": ["python3"],
+      "allowed_tools": ["python3"],
+      "validation_commands": [
+        {
+          "id": "v1",
+          "command": "python3 -c pass",
+          "expected_exit": 0,
+          "purpose": "smoke"
+        }
+      ],
+      "acceptance_criteria": [
+        {
+          "id": "c1",
+          "statement": "the controller can invoke a declared validator",
+          "validator": "v1"
+        }
+      ],
+      "expected_outputs": [],
+      "declared_blockers": [],
+      "spec_conflicts": [],
+      "spec_gaps": [],
+      "rejected": false,
+      "deferred": false
+    }
+  ]
+}

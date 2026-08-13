@@ -1,0 +1,569 @@
+"""git-up CLI (spec 17)."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+from . import REPORT_SCHEMA, __version__
+from .authorize import evidence_bound_to_context, predicate_report
+from .contract import (
+    load_contract, validate_confinement, validate_repository_binding,
+)
+from .identity import provenance_context, repository_binding, source_identity
+from .controller import Controller
+from .errors import ContractError, GitUpError
+
+from .model import ALLOWED_TRANSITIONS, BlockerCategory, TaskState
+
+_STRICT_BLOCKERS = {
+    BlockerCategory.INSUFFICIENT_TASK_DEFINITION.value,
+    BlockerCategory.TRACEABILITY.value,
+    BlockerCategory.SPECIFICATION_CONFLICT.value,
+    BlockerCategory.INCOMPLETE_SPECIFICATION.value,
+}
+from .repository import git_toplevel, porcelain, read_repo_identity, repo_head
+
+
+_COMMANDS = (
+    "inspect", "reconstruct", "plan", "classify", "ready",
+    "run", "verify", "evidence", "status", "recover", "audit", "trace",
+    "contract",
+)
+
+
+def _flag_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        prog="git-up",
+        description="Git-Up! — contract-driven implementation controller.",
+        epilog="commands: inspect reconstruct plan classify ready run "
+               "verify evidence status recover audit trace | "
+               "contract validate | contract emit | contract diff",
+    )
+    p.add_argument("--version", action="version", version=f"git-up {__version__}")
+    p.add_argument("--contract", default="git-up.contract.json",
+                   help="implementation contract (JSON)")
+    p.add_argument("--repo-root", default=None)
+    p.add_argument("--state", default=".git-up/state.json")
+    p.add_argument("--evidence", default=".git-up/evidence.jsonl")
+    p.add_argument("--report", default=None)
+    p.add_argument("--dry-run", action="store_true")
+    p.add_argument("--write", action="store_true",
+                   help="reconstruct: persist checkpoint (spec 17)")
+    p.add_argument("--until-paused", action="store_true",
+                   help="run: drain the READY queue under one lease (ADR-0013)")
+    p.add_argument("--quiet", action="store_true")
+    p.add_argument("--allow-tool", action="append", default=None)
+    p.add_argument("--from", dest="from_path", default=None,
+                   help="contract emit: source plan path")
+    p.add_argument("--out", dest="out_path", default=None,
+                   help="contract emit: write contract JSON here")
+    p.add_argument("--parent", dest="parent_path", default=None,
+                   help="contract emit: previous contract for explicit lineage")
+    p.add_argument("--check", action="store_true",
+                   help="contract emit: confinement-check the result (no execute)")
+    p.add_argument("--strict", action="store_true",
+                   help="contract validate: fail on contract-shape blockers "
+                        "(insufficient, traceability, spec conflict/gap)")
+    p.add_argument("--a", dest="diff_a", default=None,
+                   help="contract diff: left contract")
+    p.add_argument("--b", dest="diff_b", default=None,
+                   help="contract diff: right contract")
+    return p
+
+
+def _parse(argv):
+    """Flags may appear before or after the subcommand."""
+    raw = list(sys.argv[1:] if argv is None else argv)
+    parser = _flag_parser()
+    args, unknown = parser.parse_known_args(raw)
+    cmd = None
+    contract_cmd = None
+    leftover = []
+    i = 0
+    while i < len(unknown):
+        tok = unknown[i]
+        if tok in _COMMANDS and cmd is None:
+            cmd = tok
+            if cmd == "contract" and i + 1 < len(unknown) and unknown[i + 1] in (
+                "validate", "emit", "diff",
+            ):
+                contract_cmd = unknown[i + 1]
+                i += 2
+                continue
+            i += 1
+            continue
+        leftover.append(tok)
+        i += 1
+    args.command = cmd
+    args.contract_cmd = contract_cmd
+    args.leftover = leftover
+    return parser, args
+
+
+def _resolve_under_repo(repo: Path, p) -> Path:
+    path = Path(p)
+    return path if path.is_absolute() else repo / path
+
+
+def _controller(args) -> Controller:
+    repo = Path(args.repo_root or git_toplevel()).resolve()
+    return Controller(
+        contract_path=str(_resolve_under_repo(repo, args.contract)),
+        repo_root=str(repo),
+        state_path=str(_resolve_under_repo(repo, args.state)),
+        evidence_path=str(_resolve_under_repo(repo, args.evidence)),
+        execute_allow=args.allow_tool,
+    )
+
+
+def _emit(args, payload, code: int) -> int:
+    text = json.dumps(payload, indent=2) + "\n"
+    if not getattr(args, "quiet", False):
+        sys.stdout.write(text)
+    if args.report and code != 2:
+        # dry-run writes outside .git-up/ only; mutating reports are written
+        # under the lease by the controller when the path is inside .git-up/.
+        repo = Path(args.repo_root or git_toplevel()).resolve()
+        dest = Path(args.report)
+        dest = dest if dest.is_absolute() else Path.cwd() / dest
+        try:
+            dest.resolve().relative_to(repo / ".git-up")
+            inside = True
+        except ValueError:
+            inside = False
+        if inside:
+            return code
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(text, encoding="utf-8")
+    return code
+
+
+def _envelope(**extra) -> dict:
+    out = {
+        "schema_version": REPORT_SCHEMA,
+        "controller": "git-up",
+        "controller_version": __version__,
+        "result": extra.pop("result", "PASS"),
+        "errors": extra.pop("errors", []),
+        "drift_notes": extra.pop("drift_notes", []),
+    }
+    out.update(extra)
+    return out
+
+
+def _report_inside_control_plane(args) -> bool:
+    if not args.report:
+        return False
+    repo = Path(args.repo_root or git_toplevel()).resolve()
+    dest = Path(args.report)
+    dest = dest if dest.is_absolute() else Path.cwd() / dest
+    try:
+        dest.resolve().relative_to(repo / ".git-up")
+        return True
+    except ValueError:
+        return False
+
+
+def _expected_evidence(res) -> list:
+    out = []
+    by_cls = {c["task_id"]: c for c in res.report.get("classifications") or []}
+    for c in res.contracts:
+        tid = c["task_id"]
+        cls = by_cls.get(tid) or {}
+        out.append({
+            "task_id": tid,
+            "contract_id": c.get("contract_id"),
+            "if_executed": cls.get("effective_state") == "READY",
+            "required_fields": list(c.get("required_evidence") or []),
+            "commands": [v["id"] for v in c.get("validation_commands") or []],
+        })
+    return out
+
+
+def _audit_notes(res, args) -> list:
+    notes = list(res.drift_notes)
+    repo = Path(args.repo_root or git_toplevel()).resolve()
+    state_path = _resolve_under_repo(repo, args.state)
+    if state_path.is_file():
+        try:
+            raw = json.loads(state_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            notes.append("checkpoint is not valid JSON (treated as empty on load)")
+            raw = {}
+        for rec in raw.get("tasks") or []:
+            st = rec.get("state")
+            if st not in {s.value for s in TaskState}:
+                notes.append(f"unknown stored state {st!r} for {rec.get('task_id')}")
+            if rec.get("validated_pass") and st != TaskState.PASS.value:
+                notes.append(
+                    f"checkpoint validated_pass without PASS state for {rec.get('task_id')}"
+                )
+            if st == TaskState.PASS.value and rec.get("task_id") not in {
+                c["task_id"] for c in res.report.get("classifications") or []
+                if c.get("effective_state") == "PASS"
+            }:
+                notes.append(
+                    f"checkpoint PASS not in reconstructed set: {rec.get('task_id')}"
+                )
+            if st in ALLOWED_TRANSITIONS and rec.get("validated_pass") and st == "READY":
+                notes.append(f"illegal READY+validated_pass for {rec.get('task_id')}")
+    integ = res.report.get("evidence_integrity") or {}
+    if integ and not integ.get("intact", True):
+        notes.append(f"evidence chain broken at {integ.get('broken_at')}")
+    return notes
+
+
+def main(argv=None) -> int:
+    _parser, args = _parse(argv)
+    cmd = args.command
+    leftover = getattr(args, "leftover", None) or []
+    if leftover and not (
+        args.command == "contract" and args.contract_cmd == "diff"
+    ):
+        return _emit(args, _envelope(
+            result="FAIL",
+            errors=[f"unknown command or arguments: {leftover}"],
+            mode="dry-run",
+        ), 2)
+    if cmd is None:
+        _parser.print_help()
+        return 2
+    if cmd == "contract":
+        if args.contract_cmd == "validate":
+            cmd = "contract-validate"
+        elif args.contract_cmd == "emit":
+            cmd = "contract-emit"
+        elif args.contract_cmd == "diff":
+            cmd = "contract-diff"
+        else:
+            return _emit(args, _envelope(
+                result="FAIL",
+                errors=["usage: git-up contract validate | emit | diff"],
+            ), 2)
+
+    dry_default = cmd in {
+        "inspect", "plan", "classify", "ready", "contract-validate",
+        "evidence", "status", "audit", "trace",
+    }
+    dry_run = bool(args.dry_run or dry_default)
+    if cmd == "reconstruct":
+        dry_run = not bool(args.write or (not args.dry_run and args.write))
+        if args.write:
+            dry_run = False
+        else:
+            dry_run = True
+    if cmd == "verify":
+        dry_run = bool(args.dry_run)
+    execute = cmd == "run" and not dry_run
+    if cmd == "run" and args.dry_run:
+        execute = False
+        dry_run = True
+
+    if dry_run and _report_inside_control_plane(args):
+        return _emit(args, _envelope(
+            result="FAIL",
+            errors=["--report inside .git-up/ requires a lease; refused in dry-run"],
+            mode="dry-run",
+        ), 2)
+
+    mode = {
+        "inspect": "dry-run",
+        "plan": "plan",
+        "classify": "dry-run",
+        "ready": "dry-run",
+        "contract-validate": "dry-run",
+        "evidence": "dry-run",
+        "status": "dry-run",
+        "audit": "dry-run",
+        "trace": "dry-run",
+        "reconstruct": "recover" if not dry_run else "dry-run",
+        "recover": "recover",
+        "verify": "verify",
+        "run": "dry-run" if dry_run else "execute",
+    }.get(cmd, "dry-run")
+
+    try:
+        if cmd == "contract-emit":
+            from .adapter import emit_contract_file
+            if not args.from_path:
+                return _emit(args, _envelope(
+                    result="FAIL",
+                    errors=["usage: git-up contract emit --from PLAN [--out CONTRACT]"],
+                ), 2)
+            doc = emit_contract_file(
+                args.from_path, args.out_path, parent_path=args.parent_path,
+            )
+            confine, bind = [], []
+            if args.check:
+                import tempfile
+                repo = args.repo_root or str(git_toplevel())
+                check_path = args.out_path
+                tmp = None
+                if not check_path:
+                    tmp = tempfile.NamedTemporaryFile(
+                        "w", suffix=".json", delete=False, encoding="utf-8",
+                    )
+                    tmp.write(json.dumps(doc, indent=2) + "\n")
+                    tmp.close()
+                    check_path = tmp.name
+                try:
+                    loaded = load_contract(check_path)
+                    confine = validate_confinement(loaded, repo)
+                    bind = validate_repository_binding(loaded, repo)
+                finally:
+                    if tmp is not None:
+                        Path(tmp.name).unlink(missing_ok=True)
+            check_errors = (
+                [f"path confinement: {e}" for e in confine]
+                + [f"repository binding: {e}" for e in bind]
+            )
+            payload = _envelope(
+                mode="dry-run",
+                advisory=True,
+                frontier="PAUSED",
+                producer="git-up.adapter.plan",
+                out=args.out_path,
+                parent=args.parent_path,
+                parent_contracts=(doc.get("provenance") or {}).get("parent_contracts"),
+                task_count=len(doc.get("tasks") or []),
+                confinement_errors=confine,
+                repository_binding_errors=bind,
+                result="FAIL" if check_errors else "PASS",
+                errors=check_errors,
+                contract=doc,
+            )
+            return _emit(args, payload, 2 if check_errors else 0)
+
+        if cmd == "contract-diff":
+            from .diff import diff_contracts
+            paths = list(leftover)
+            left = getattr(args, "diff_a", None) or (paths[0] if paths else None)
+            right = getattr(args, "diff_b", None) or (paths[1] if len(paths) > 1 else None)
+            if not left or not right:
+                return _emit(args, _envelope(
+                    result="FAIL",
+                    errors=["usage: git-up contract diff A.json B.json"],
+                ), 2)
+            delta = diff_contracts(load_contract(left), load_contract(right))
+            payload = _envelope(
+                mode="dry-run",
+                advisory=True,
+                frontier="PAUSED",
+                a=str(Path(left).resolve()),
+                b=str(Path(right).resolve()),
+                **delta,
+            )
+            return _emit(args, payload, 0)
+
+        if cmd == "contract-validate":
+            repo = Path(args.repo_root or git_toplevel()).resolve()
+            cpath = _resolve_under_repo(repo, args.contract)
+            contract = load_contract(cpath)
+            confine = validate_confinement(contract, repo)
+            bind = validate_repository_binding(contract, repo)
+            insufficient = []
+            strict_blockers = []
+            if getattr(args, "strict", False):
+                ctrl = Controller(
+                    contract_path=str(cpath),
+                    repo_root=str(repo),
+                    state_path=str(repo / ".git-up" / "state.json"),
+                    evidence_path=str(repo / ".git-up" / "evidence.jsonl"),
+                )
+                res = ctrl.run(dry_run=True, execute=False)
+                for c in res.report.get("classifications") or []:
+                    cls = c.get("blocker_class")
+                    if cls in _STRICT_BLOCKERS:
+                        strict_blockers.append(
+                            {"task_id": c["task_id"], "blocker_class": cls}
+                        )
+                    if cls == BlockerCategory.INSUFFICIENT_TASK_DEFINITION.value:
+                        insufficient.append(c["task_id"])
+            errors = [f"path confinement: {e}" for e in confine]
+            errors.extend(f"repository binding: {e}" for e in bind)
+            if insufficient:
+                errors.append("insufficient definition: " + ", ".join(insufficient))
+            other = [
+                f"{b['task_id']}={b['blocker_class']}"
+                for b in strict_blockers
+                if b["blocker_class"]
+                != BlockerCategory.INSUFFICIENT_TASK_DEFINITION.value
+            ]
+            if other:
+                errors.append("strict contract-shape blockers: " + ", ".join(other))
+            payload = _envelope(
+                mode="dry-run",
+                advisory=True,
+                frontier="PAUSED",
+                contract=str(Path(cpath).resolve()),
+                document_identity=source_identity(contract),
+                schema_version_contract=contract.schema_version,
+                task_count=len(contract.tasks),
+                confinement_errors=confine,
+                repository_binding_errors=bind,
+                insufficient_tasks=insufficient,
+                strict_blockers=strict_blockers,
+                result="FAIL" if (confine or bind or strict_blockers) else "PASS",
+                errors=errors,
+            )
+            return _emit(args, payload, 2 if (confine or bind or strict_blockers) else 0)
+
+        ctrl = _controller(args)
+        if cmd == "evidence":
+            trusted = ctrl.log.verified_records()
+            try:
+                contract = load_contract(ctrl.contract_path)
+                ctx = provenance_context(
+                    ctrl.repo_root, contract, create_identity=False,
+                )
+                bound = []
+                for rec in trusted:
+                    item = dict(rec)
+                    item["bound_to_current_context"] = evidence_bound_to_context(
+                        rec, ctx,
+                    )
+                    bound.append(item)
+            except (ContractError, OSError):
+                bound = [dict(r, bound_to_current_context=None) for r in trusted]
+            payload = _envelope(
+                mode="dry-run",
+                advisory=True,
+                frontier="PAUSED",
+                integrity=ctrl.log.verify_integrity(),
+                trusted=bound,
+            )
+            return _emit(args, payload, 0)
+
+        locked_report = args.report if (args.report and not dry_run
+                                        and _report_inside_control_plane(args)) else None
+        res = ctrl.run(dry_run=dry_run, execute=execute, mode=mode,
+                       report_path=locked_report,
+                       until_paused=bool(getattr(args, "until_paused", False)
+                                         and execute))
+    except ContractError as e:
+        return _emit(args, _envelope(result="FAIL", errors=[f"contract: {e}"]), 2)
+    except GitUpError as e:
+        return _emit(args, _envelope(result="FAIL", errors=[f"git-up: {e}"]), 3)
+    except Exception as e:  # pragma: no cover
+        return _emit(args, _envelope(result="FAIL", errors=[f"controller: {e}"]), 3)
+
+    repo = Path(args.repo_root or git_toplevel())
+    out = dict(res.report)
+    out["result"] = res.result
+    out["errors"] = res.errors
+
+    if cmd == "inspect":
+        out = _envelope(
+            mode="dry-run",
+            advisory=True,
+            frontier=res.frontier,
+            contract=str(Path(ctrl.contract_path).resolve()),
+            document_identity=(
+                source_identity(ctrl.contract) if ctrl.contract else ""
+            ),
+            schema_version_contract=getattr(ctrl.contract, "schema_version", ""),
+            task_ids=[t.id for t in (ctrl.contract.tasks if ctrl.contract else [])],
+            repository_identity=read_repo_identity(repo),
+            head=repo_head(repo),
+            dirty_paths=sorted(porcelain(repo)),
+            declared_repository=(
+                repository_binding(ctrl.contract) if ctrl.contract else {}
+            ),
+            authority_sources=[
+                {"path": a.path, "anchor": a.anchor,
+                 "requirement_id": a.requirement_id}
+                for a in (getattr(ctrl.contract, "authority_sources", None) or [])
+            ] if ctrl.contract else [],
+            evidence_integrity=res.report.get("evidence_integrity"),
+            provenance=(ctrl.contract.provenance if ctrl.contract else {}),
+            result=res.result,
+            errors=res.errors,
+        )
+    elif cmd == "ready":
+        out = _envelope(
+            mode="dry-run", advisory=True, frontier=res.frontier,
+            ready_queue=res.ready_queue, result=res.result, errors=res.errors,
+        )
+    elif cmd == "classify":
+        out = _envelope(
+            mode="dry-run", advisory=True, frontier=res.frontier,
+            classifications=res.report.get("classifications"),
+            graph=res.report.get("graph"),
+            result=res.result, errors=res.errors,
+        )
+    elif cmd == "plan":
+        out = _envelope(
+            mode="plan", advisory=True, frontier=res.frontier,
+            classifications=res.report.get("classifications"),
+            ready_queue=res.ready_queue,
+            execution_contracts=res.contracts,
+            expected_evidence=_expected_evidence(res),
+            result=res.result, errors=res.errors,
+        )
+    elif cmd == "reconstruct":
+        pass_ids = [
+            c["task_id"] for c in res.report.get("classifications") or []
+            if c.get("effective_state") == "PASS"
+        ]
+        out = _envelope(
+            mode=mode, advisory=dry_run, frontier=res.frontier,
+            authoritative_pass=pass_ids,
+            graph=res.report.get("graph"),
+            drift_notes=res.drift_notes,
+            result=res.result, errors=res.errors,
+        )
+    elif cmd == "trace":
+        out = _envelope(
+            mode=res.report.get("mode"), advisory=res.report.get("advisory"),
+            frontier=res.frontier,
+            traceability=res.report.get("traceability"),
+            requirement_ledger=res.report.get("requirement_ledger"),
+            result=res.result, errors=res.errors,
+        )
+    elif cmd == "audit":
+        notes = _audit_notes(res, args)
+        out = _envelope(
+            mode="dry-run", advisory=True, frontier=res.frontier,
+            evidence_integrity=res.report.get("evidence_integrity"),
+            drift_notes=notes,
+            phase_log=res.phase_log,
+            result="FAIL" if any("broken" in n or "illegal" in n or "unknown" in n
+                                 for n in notes) else res.result,
+            errors=res.errors,
+        )
+    elif cmd == "status":
+        out = _envelope(
+            mode=res.report.get("mode"), advisory=res.report.get("advisory"),
+            frontier=res.frontier, graph=res.report.get("graph"),
+            drift_notes=res.drift_notes, result=res.result, errors=res.errors,
+        )
+    elif cmd == "verify":
+        pass_ids = [
+            c["task_id"] for c in res.report.get("classifications") or []
+            if c.get("effective_state") == "PASS"
+        ]
+        out = _envelope(
+            mode="verify",
+            advisory=dry_run,
+            frontier=res.frontier,
+            authoritative_pass=pass_ids,
+            predicate=predicate_report(
+                ctrl.contract, ctrl.log, ctrl.ctx, repo
+            ),
+            classifications=res.report.get("classifications"),
+            drift_notes=res.drift_notes,
+            result=res.result,
+            errors=res.errors,
+        )
+
+    code = res.exit_code
+    if code == 0 and out.get("result") == "FAIL":
+        code = 1
+    return _emit(args, out, code)
+
+
+if __name__ == "__main__":
+    sys.exit(main())
