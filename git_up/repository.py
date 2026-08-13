@@ -8,8 +8,9 @@ import uuid
 from pathlib import Path
 from typing import Optional
 
-from .canonical import sha256_file
+from .canonical import sha256_file, sha256_json
 from .errors import RepositoryError
+from .safety import is_control_artifact, is_interpreter_residue
 
 IDENTITY_REL = Path(".git-up") / "repo.identity"
 
@@ -142,23 +143,42 @@ def ensure_repo_identity(repo_root) -> str:
         raise RepositoryError(f"cannot create repository identity: {e}") from e
 
 
+def _observe(path: Path, rel: str):
+    """Spec 06 §5 plus directories: None | sha256 | link:… | dir:…"""
+    if not path.exists() and not path.is_symlink():
+        return None
+    if path.is_symlink():
+        try:
+            return "link:" + sha256_file(path.resolve(strict=False))
+        except OSError:
+            return "link:broken"
+    if path.is_dir():
+        entries = []
+        try:
+            children = sorted(path.iterdir(), key=lambda c: c.name)
+        except OSError:
+            return "dir:unreadable"
+        for child in children:
+            crel = f"{rel.rstrip('/')}/{child.name}" if rel else child.name
+            if is_interpreter_residue(crel) or is_control_artifact(crel):
+                continue
+            entries.append([child.name, _observe(child, crel)])
+        return "dir:" + sha256_json(entries)
+    try:
+        return sha256_file(path)
+    except OSError:
+        return None
+
+
 def target_hashes(targets, repo_root) -> dict:
-    """Observed state map: None | sha256 | link:sha256 | link:broken."""
+    """Observed state map: None | sha256 | link:… | dir:… (spec 06 §5).
+
+    A directory is not absent. Hashing it as None (open() → EISDIR) made
+    deleting a directory target indistinguishable from leaving it in place.
+    """
     repo = Path(repo_root).resolve()
     out = {}
     for t in targets or []:
         key = str(t)
-        p = repo / key
-        if not p.exists() and not p.is_symlink():
-            out[key] = None
-        elif p.is_symlink():
-            try:
-                out[key] = "link:" + sha256_file(p.resolve(strict=False))
-            except OSError:
-                out[key] = "link:broken"
-        else:
-            try:
-                out[key] = sha256_file(p)
-            except OSError:
-                out[key] = None
+        out[key] = _observe(repo / key, key)
     return out

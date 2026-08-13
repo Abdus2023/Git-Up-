@@ -40,6 +40,7 @@ Canonical process and list: [../decisions/README.md](../decisions/README.md).
 | [0029](../decisions/ADR-0029-host-1.0.8.md) | Host 1.0.8 isolated Git observation |
 | [0030](../decisions/ADR-0030-host-1.0.9.md) | Host 1.0.9 evidence uniqueness + unknown state |
 | [0031](../decisions/ADR-0031-host-1.0.10.md) | Host 1.0.10 flag-style path arguments |
+| [0032](../decisions/ADR-0032-host-1.0.11.md) | Host 1.0.11 directory target observation |
 
 ## Rules
 

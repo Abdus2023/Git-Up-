@@ -1,4 +1,4 @@
-# Conformance audit — Specification v0.1 × host 1.0.10
+# Conformance audit — Specification v0.1 × host 1.0.11
 
 **Status:** derived (not authority)  
 **Date:** 2026-08-12
@@ -22,7 +22,7 @@ This is the audit the methodology called for. It does not authorize PASS.
 | 9 Validators | No shell; exact allowlist | `git_up/safety.py` | I-SAFE-1 | — | none |
 | 9b Runtime BLOCKED | IN_PROGRESS → BLOCKED for safety/toolchain | `StateStore.finish_blocked` | I-SAFE-3 | — | none |
 | 10 Execution | Declared commands only | `git_up/execute.py` | I-REC-2, I-TIMEOUT | — | none |
-| 11 Result integrity | Target hashes + expected outputs | `task_may_pass` | I-PASS-2, I-SCOPE-1 | — | none |
+| 11 Result integrity | Target hashes + expected outputs; dirs are `dir:` | `task_may_pass` | I-PASS-2, I-SCOPE-1, I-DIR-1 | — | none |
 | 12 PASS authorization | Predicate; no shortcuts | `authorize.py` + VALIDATING | I-PASS-1…5 | `git-up verify` | none |
 | 13 Recovery | Evidence > checkpoint | `checkpoint.py` + reconstruct | I-PASS-3, I-REC-1 | `git-up recover` | none |
 | 14 Crash consistency | Atomic replace; fsync order | `StateStore.save`, `EvidenceLog.append` | I-REC-1 | — | mid-fsync FS lie out of scope |

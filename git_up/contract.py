@@ -189,6 +189,10 @@ def load_contract(path) -> Contract:
         raise ContractError("policy.failure_mode must be fail_closed")
     if str(policy.get("concurrency") or "exclusive") != "exclusive":
         raise ContractError("policy.concurrency must be exclusive")
+    # spec 05: policy.determinism is required to be true when declared.
+    det = policy.get("determinism") if isinstance(policy, dict) else None
+    if det not in (None, True, "true", "True"):
+        raise ContractError("policy.determinism must be true")
 
     tools = []
     for t in raw.get("tools") or raw.get("tool_registry") or []:

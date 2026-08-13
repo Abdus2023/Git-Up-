@@ -43,3 +43,4 @@ Charter invariants (spec 01 §8) plus operational MUST IDs from spec 18.
 | I-EVID-3 | Empty evidence_id / unknown result untrusted | 11 §1–3, 04 | `test_empty_evidence_id_breaks_trust` |
 | I-REC-4 | Unknown checkpoint state discarded | 04, 14 | `test_unknown_checkpoint_state_does_not_crash_recover` |
 | I-SAFE-4 | `--flag=../x` and `--flag=/abs` denied | 10 §2, 16 §3 | `test_flag_equals_dotdot_rejected` |
+| I-DIR-1 | Directory targets bind tree digest, not None | 06 §5, 11 §5.7 | `test_directory_content_change_invalidates_pass` |

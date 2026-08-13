@@ -2,6 +2,11 @@
 
 Derived history. Not authority.
 
+## 1.0.11 — 2026-08-12
+
+- Directory targets are `dir:` tree digests, not `None` (spec 06 §5 / 11 §5.7)
+- `policy.determinism` that is not true is ContractError
+
 ## 1.0.10 — 2026-08-12
 
 - `--flag=../x` and `--flag=/abs` are denied as command arguments (spec 10 / 16)

@@ -3,9 +3,9 @@
 **Declared:** 2026-08-12  
 **Status:** IN FORCE  
 **Implements:** [Specification Freeze v0.1](specification/README.md)  
-**ADR:** [ADR-0021](decisions/ADR-0021-host-1.0.md) … [ADR-0031](decisions/ADR-0031-host-1.0.10.md)
+**ADR:** [ADR-0021](decisions/ADR-0021-host-1.0.md) … [ADR-0032](decisions/ADR-0032-host-1.0.11.md)
 
-This is version **1.0.10** of the **host** implementation (Python 3.11 stdlib). It is not a Rust native port and not a Red/Cognition runtime. 1.0.x patches are compatible conformance fixes of 1.0.0 (Specification v0.1 unchanged).
+This is version **1.0.11** of the **host** implementation (Python 3.11 stdlib). It is not a Rust native port and not a Red/Cognition runtime. 1.0.x patches are compatible conformance fixes of 1.0.0 (Specification v0.1 unchanged).
 
 ## What 1.0 is
 
@@ -55,5 +55,6 @@ python3 ./git-up contract validate --strict
 - 1.0.8 — [ADR-0029](decisions/ADR-0029-host-1.0.8.md): isolate git observation from ambient `GIT_*`
 - 1.0.9 — [ADR-0030](decisions/ADR-0030-host-1.0.9.md): empty/unknown evidence refused; unknown checkpoint state discarded
 - 1.0.10 — [ADR-0031](decisions/ADR-0031-host-1.0.10.md): flag-style `..` / absolute args denied
+- 1.0.11 — [ADR-0032](decisions/ADR-0032-host-1.0.11.md): directory targets bind a `dir:` tree digest
 
 No new CLI verbs. No spec bump.
